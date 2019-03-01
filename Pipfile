@@ -10,4 +10,4 @@ pokedex = {editable = true,git = "https://github.com/veekun/pokedex.git"}
 jupyter = "*"
 
 [requires]
-python_version = "2.7"
+python_version = "3.7"

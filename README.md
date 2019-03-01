@@ -14,7 +14,7 @@ https://github.com/veekun/pokedex.
 
 ## Dependencies
 
-- Python 2 (required by https://github.com/veekun/pokedex/)
+- Python 3.7
 - Pipenv
 
 ## Setup
