@@ -1,0 +1,15 @@
+[Unit]
+Description=rotom-pokedex-bot
+After=network.target
+
+[Service]
+Type=simple
+User=$USER
+WorkingDirectory=$PWD
+ExecStart=$PWD/.venv/bin/python server.py
+
+Environment=ROTOM_BOT_TOKEN=$ROTOM_BOT_TOKEN
+Environment=ROTOM_HOST=$ROTOM_HOST
+
+[Install]
+WantedBy=multi-user.target
