@@ -78,8 +78,12 @@ def set_webhook(bot_token, host):
     request = tornado.httpclient.HTTPRequest(
         f'https://api.telegram.org/bot{bot_token}/setWebhook?url={webhook_url}')
     logging.info(f'setting webhook to {webhook_url}')
-    response = client.fetch(request)
-    logging.info(f'set webhook: {response.body.decode("utf-8")}')
+    response = client.fetch(request, raise_error=False)
+    result = json.loads(response.body.decode('utf-8'))
+    if result['ok']:
+        logging.info('webhook set successfully')
+    else:
+        logging.warning(f'failed to set webhook: {result}')
     client.close()
 
 
