@@ -116,6 +116,19 @@ PP: {move.pp}
 {move.effect}'''
 
 
+def format_move_inline_Result(move: tables.Move):
+    return {
+        'type': 'article',
+        'id': f'move#{move.id}',
+        'title': f'{move.name} (move)',
+        'input_message_content': {
+            'message_text': format_move(move),
+            'parse_mode': 'Markdown',
+        },
+        'description': str(move.short_effect),
+    }
+
+
 def format_result(session, result):
     if isinstance(result, tables.PokemonSpecies):
         return format_pokemon(session, result.default_pokemon)
@@ -138,6 +151,8 @@ def format_inline_result(session, result):
         return format_ability_inline_result(result)
     elif isinstance(result, tables.Item):
         return format_item_inline_result(result)
+    elif isinstance(result, tables.Move):
+        return format_move_inline_Result(result)
 
 
 def handle_text_message(session, lookup, message):

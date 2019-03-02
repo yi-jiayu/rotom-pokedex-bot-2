@@ -30,6 +30,11 @@ def item(session):
     return util.get(session, tables.Item, 'soul-dew')
 
 
+@pytest.fixture
+def move(session):
+    return util.get(session, tables.Move, 'psycho-boost')
+
+
 class TestPokemon:
     def test_format_pokemon(self, session, pokemon):
         expected = '''*Torterra (#389)*
@@ -131,4 +136,35 @@ Held by Latias or Latios: Increases the holder's Special Attack and Special Defe
             'description': "Raises Latias and Latios's Special Attack and Special Defense by 50%.",
         }
         actual = format_item_inline_result(item)
+        assert actual == expected
+
+
+class TestMove:
+    def test_format_move(self, move):
+        expected = '''*Psycho Boost* (move)
+Type: Psychic
+Power: 140
+Accuracy: 90
+PP: 5
+Inflicts regular damage, then lowers the user's Special Attack by two stages.'''
+        actual = format_move(move)
+        assert actual == expected
+
+    def test_format_move_inline_result(self, move):
+        expected = {
+            'type': 'article',
+            'id': 'move#354',
+            'title': 'Psycho Boost (move)',
+            'input_message_content': {
+                'message_text': '''*Psycho Boost* (move)
+Type: Psychic
+Power: 140
+Accuracy: 90
+PP: 5
+Inflicts regular damage, then lowers the user's Special Attack by two stages.''',
+                'parse_mode': 'Markdown',
+            },
+            'description': "Lowers the user's Special Attack by two stages after inflicting damage.",
+        }
+        actual = format_move_inline_Result(move)
         assert actual == expected
