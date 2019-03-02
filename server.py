@@ -13,7 +13,11 @@ import tornado.httpclient
 import tornado.ioloop
 import tornado.web
 
+import log
 import type_efficacy
+
+# 40 characters should be more than enough to query anything in the Pokédex
+MAX_QUERY_LENGTH = 40
 
 session = connect()
 lookup = PokedexLookup(session=session)
@@ -29,8 +33,12 @@ def format_type_effectiveness(type_effectiveness):
                                  ('Immunities', immunities)) if v)
 
 
-def pokemon_image_url(pokemon_id):
-    return f'https://assets.pokemon.com/assets/cms2/img/pokedex/full/{pokemon_id}.png'
+def pokemon_full_image_url(pokemon_id):
+    return f'https://assets.pokemon.com/assets/cms2/img/pokedex/full/{pokemon_id:03}.png'
+
+
+def pokemon_thumbnail_image_url(pokemon_id):
+    return f'https://assets.pokemon.com/assets/cms2/img/pokedex/detail/{pokemon_id:03}.png'
 
 
 def format_pokemon(session, pokemon: tables.Pokemon):
@@ -43,8 +51,24 @@ Hidden ability: {pokemon.hidden_ability and pokemon.hidden_ability.name}
 Height: {pokemon.height / 10} m
 Weight: {pokemon.weight / 10} kg'''
     if pokemon.id < 10000:
-        s += f'\n[Image]({pokemon_image_url(pokemon.id)})'
+        s += f'\n[Image]({pokemon_full_image_url(pokemon.id)})'
     return s
+
+
+def format_pokemon_inline_result(session, pokemon: tables.Pokemon):
+    result = {
+        'type': 'article',
+        'id': f'pokemon#{pokemon.id:03}',
+        'title': f'{pokemon.name} (#{pokemon.id:03})',
+        'input_message_content': {
+            'message_text': format_pokemon(session, pokemon),
+            'parse_mode': 'Markdown',
+        },
+        'description': '/'.join(t.name for t in pokemon.types),
+    }
+    if pokemon.id < 10000:
+        result['thumb_url'] = pokemon_thumbnail_image_url(pokemon.id)
+    return result
 
 
 def format_ability(ability: tables.Ability):
@@ -79,6 +103,45 @@ def format_result(session, result):
         return format_move(result)
 
 
+def format_inline_result(session, result):
+    if isinstance(result, tables.PokemonSpecies):
+        return format_pokemon_inline_result(session, result.default_pokemon)
+    elif isinstance(result, tables.PokemonForm):
+        return format_pokemon_inline_result(session, result.pokemon)
+
+
+def handle_text_message(session, lookup, message):
+    query = message['text'][:MAX_QUERY_LENGTH]
+    chat_id = message['chat']['id']
+    log.info(query=query, type='text_message', chat_id=chat_id, message_id=message['message_id'])
+    hits = lookup.lookup(query)
+    log.info(hits=hits, chat_id=chat_id, message_id=message['message_id'])
+    response = None
+    if hits:
+        best = hits[0].object
+        response = format_result(session, best)
+    response = response or 'No results!'
+    return {'method': 'sendMessage',
+            'chat_id': chat_id,
+            'text': response,
+            'parse_mode': 'markdown'}
+
+
+def handle_inline_query(session, lookup, inline_query):
+    query = inline_query['query'][:MAX_QUERY_LENGTH]
+    inline_query_id = inline_query['id']
+    log.info(query=query, type='inline_query', inline_query_id=inline_query_id)
+    hits = lookup.lookup(query)
+    log.info(hits=hits, inline_query_id=inline_query_id)
+    results = list(filter(None, (format_inline_result(session, h.object) for h in hits)))
+    serialised_results = json.dumps(results) if results else ''
+    return {
+        'method': 'answerInlineQuery',
+        'inline_query_id': inline_query_id,
+        'results': serialised_results,
+    }
+
+
 class WebhookHandler(tornado.web.RequestHandler):
     def initialize(self, session, lookup):
         self.session = session
@@ -87,17 +150,12 @@ class WebhookHandler(tornado.web.RequestHandler):
     def post(self):
         update = json.loads(self.request.body)
         if 'message' in update and 'text' in update['message']:
-            query = update['message']['text']
-            logging.info(f'query: {query}')
-            hits = self.lookup.lookup(query)
-            logging.info(f'hits: {hits}')
-            response = None
-            if hits:
-                best = hits[0].object
-                response = format_result(self.session, best)
-            response = response or 'No results!'
-            self.write({'method': 'sendMessage', 'chat_id': update['message']['chat']['id'], 'text': response,
-                        'parse_mode': 'markdown'})
+            response = handle_text_message(self.session, self.lookup, update['message'])
+            self.write(response)
+        elif 'inline_query' in update:
+            print(update['inline_query'])
+            response = handle_inline_query(self.session, self.lookup, update['inline_query'])
+            self.write(response)
 
 
 def set_webhook(bot_token, host):
@@ -105,12 +163,10 @@ def set_webhook(bot_token, host):
     webhook_url = f'https://{host}/webhook'
     request = tornado.httpclient.HTTPRequest(
         f'https://api.telegram.org/bot{bot_token}/setWebhook?url={webhook_url}')
-    logging.info(f'setting webhook to {webhook_url}')
+    log.info(message='setting webhook', url=webhook_url)
     response = client.fetch(request, raise_error=False)
     result = json.loads(response.body.decode('utf-8'))
-    if result['ok']:
-        logging.info('webhook set successfully')
-    else:
+    if not result['ok']:
         logging.warning(f'failed to set webhook: {result}')
     client.close()
 
