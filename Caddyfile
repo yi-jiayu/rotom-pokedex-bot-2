@@ -1,0 +1,7 @@
+$HOST {
+	log $LOG_PATH
+	proxy /webhook localhost:$PORT {
+		transparent
+		header_downstream -Server
+	}
+}
