@@ -58,7 +58,7 @@ Weight: {pokemon.weight / 10} kg'''
 def format_pokemon_inline_result(session, pokemon: tables.Pokemon):
     result = {
         'type': 'article',
-        'id': f'pokemon#{pokemon.id:03}',
+        'id': f'pokemon#{pokemon.id}',
         'title': f'{pokemon.name} (#{pokemon.id:03})',
         'input_message_content': {
             'message_text': format_pokemon(session, pokemon),
@@ -74,6 +74,19 @@ def format_pokemon_inline_result(session, pokemon: tables.Pokemon):
 def format_ability(ability: tables.Ability):
     return f'''*{ability.name}* (ability)
 {ability.effect}'''
+
+
+def format_ability_inline_result(ability: tables.Ability):
+    return {
+        'type': 'article',
+        'id': f'item#{ability.id}',
+        'title': f'{ability.name} (ability)',
+        'input_message_content': {
+            'message_text': format_ability(ability),
+            'parse_mode': 'Markdown',
+        },
+        'description': str(ability.short_effect),
+    }
 
 
 def format_item(item: tables.Item):
@@ -108,14 +121,15 @@ def format_inline_result(session, result):
         return format_pokemon_inline_result(session, result.default_pokemon)
     elif isinstance(result, tables.PokemonForm):
         return format_pokemon_inline_result(session, result.pokemon)
+    elif isinstance(result, tables.Ability):
+        return format_ability_inline_result(result)
 
 
 def handle_text_message(session, lookup, message):
     query = message['text'][:MAX_QUERY_LENGTH]
     chat_id = message['chat']['id']
-    log.info(query=query, type='text_message', chat_id=chat_id, message_id=message['message_id'])
     hits = lookup.lookup(query)
-    log.info(hits=hits, chat_id=chat_id, message_id=message['message_id'])
+    log.info(query=query, hits=hits, type='text_message', chat_id=chat_id, message_id=message['message_id'])
     response = None
     if hits:
         best = hits[0].object
@@ -130,11 +144,13 @@ def handle_text_message(session, lookup, message):
 def handle_inline_query(session, lookup, inline_query):
     query = inline_query['query'][:MAX_QUERY_LENGTH]
     inline_query_id = inline_query['id']
-    log.info(query=query, type='inline_query', inline_query_id=inline_query_id)
-    hits = lookup.lookup(query)
-    log.info(hits=hits, inline_query_id=inline_query_id)
-    results = list(filter(None, (format_inline_result(session, h.object) for h in hits)))
-    serialised_results = json.dumps(results) if results else ''
+    if query:
+        hits = lookup.lookup(query)
+        log.info(query=query, hits=hits, type='inline_query', inline_query_id=inline_query_id)
+        results = list(filter(None, (format_inline_result(session, h.object) for h in hits)))
+        serialised_results = json.dumps(results) if results else ''
+    else:
+        serialised_results = ''
     return {
         'method': 'answerInlineQuery',
         'inline_query_id': inline_query_id,
