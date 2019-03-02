@@ -48,17 +48,17 @@ Weight: {pokemon.weight / 10} kg'''
 
 
 def format_ability(ability: tables.Ability):
-    return f'''*{ability.name}* (Ability)
+    return f'''*{ability.name}* (ability)
 {ability.effect}'''
 
 
 def format_item(item: tables.Item):
-    return f'''*{item.name}* (Item)
+    return f'''*{item.name}* (item)
 {item.effect}'''
 
 
 def format_move(move: tables.Move):
-    return f'''*{move.name}* (Move)
+    return f'''*{move.name}* (move)
 Type: {move.type.name}
 Power: {move.power}
 Accuracy: {move.accuracy}
