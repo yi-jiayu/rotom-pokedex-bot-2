@@ -1,3 +1,4 @@
+import argparse
 import json
 import logging
 import os
@@ -94,19 +95,23 @@ def make_app():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-s', '--set-webhook', action='store_true', help='Sets the bot webhook before starting.')
+    args = parser.parse_args()
 
-    bot_token = os.getenv('ROTOM_BOT_TOKEN')
-    if not bot_token:
-        logging.critical('ROTOM_BOT_TOKEN not set')
-        sys.exit(1)
+    if args.set_webhook:
+        bot_token = os.getenv('ROTOM_BOT_TOKEN')
+        if not bot_token:
+            logging.critical('ROTOM_BOT_TOKEN not set')
+            sys.exit(1)
 
-    host = os.getenv('ROTOM_HOST')
-    if not host:
-        logging.critical('ROTOM_HOST not set')
-        sys.exit(1)
+        host = os.getenv('ROTOM_HOST')
+        if not host:
+            logging.critical('ROTOM_HOST not set')
+            sys.exit(1)
 
-    set_webhook(bot_token, host)
+        set_webhook(bot_token, host)
+
     app = make_app()
     app.listen(8080)
     tornado.ioloop.IOLoop.current().start()
