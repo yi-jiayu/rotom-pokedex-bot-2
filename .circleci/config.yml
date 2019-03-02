@@ -25,7 +25,7 @@ jobs:
           key: v2-pipenv-{{ checksum "Pipfile.lock" }}
       - run:
           name: run tests
-          command: pipenv run pytest --cov
+          command: pipenv run pytest --cov=./
       - run:
           name: upload coverage
           command: bash <(curl -s https://codecov.io/bash)
