@@ -79,7 +79,7 @@ def format_ability(ability: tables.Ability):
 def format_ability_inline_result(ability: tables.Ability):
     return {
         'type': 'article',
-        'id': f'item#{ability.id}',
+        'id': f'ability#{ability.id}',
         'title': f'{ability.name} (ability)',
         'input_message_content': {
             'message_text': format_ability(ability),
