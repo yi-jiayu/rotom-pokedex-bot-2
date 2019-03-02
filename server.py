@@ -27,15 +27,22 @@ def format_type_effectiveness(type_effectiveness):
                                  ('Immunities', immunities)) if v)
 
 
+def pokemon_image_url(pokemon_id):
+    return f'https://assets.pokemon.com/assets/cms2/img/pokedex/full/{pokemon_id}.png'
+
+
 def format_pokemon(session, pokemon: tables.Pokemon):
     type_effectiveness = type_efficacy.get_type_effectiveness(session, pokemon)
-    return f'''*{pokemon.name} (#{pokemon.id:03})*
+    s = f'''*{pokemon.name} (#{pokemon.id:03})*
 Type: {'/'.join(t.name for t in pokemon.types)}
 {format_type_effectiveness(type_effectiveness)}
 Abilities: {', '.join(a.name for a in pokemon.abilities)}
 Hidden ability: {pokemon.hidden_ability and pokemon.hidden_ability.name}
 Height: {pokemon.height / 10} m
 Weight: {pokemon.weight / 10} kg'''
+    if pokemon.id < 10000:
+        s += f'\n[Image]({pokemon_image_url(pokemon.id)})'
+    return s
 
 
 def format_ability(ability: tables.Ability):
