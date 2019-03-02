@@ -9,6 +9,7 @@ verify_ssl = true
 pokedex = {editable = true,git = "https://github.com/veekun/pokedex.git"}
 jupyter = "*"
 tornado = "*"
+sentry-sdk = "*"
 
 [requires]
 python_version = "3.7"

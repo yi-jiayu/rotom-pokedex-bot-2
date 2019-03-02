@@ -6,10 +6,14 @@ After=network.target
 Type=simple
 User=$USER
 WorkingDirectory=$PWD
-ExecStart=$PWD/.venv/bin/python server.py
+ExecStart=$PIPENV_PATH run python server.py -s
 
 Environment=ROTOM_BOT_TOKEN=$ROTOM_BOT_TOKEN
 Environment=ROTOM_HOST=$ROTOM_HOST
+
+Environment=SENTRY_DSN=$SENTRY_DSN
+Environment=SENTRY_RELEASE=$SENTRY_RELEASE
+Environment=SENTRY_ENVIRONMENT=$SENTRY_ENVIRONMENT
 
 [Install]
 WantedBy=multi-user.target

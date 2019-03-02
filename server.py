@@ -7,6 +7,8 @@ import sys
 from pokedex.lookup import PokedexLookup
 from pokedex.db import connect, tables
 
+import sentry_sdk
+
 import tornado.httpclient
 import tornado.ioloop
 import tornado.web
@@ -121,6 +123,7 @@ def make_app():
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
+    sentry_sdk.init()
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--set-webhook', action='store_true', help='Sets the bot webhook before starting.')
