@@ -94,6 +94,19 @@ def format_item(item: tables.Item):
 {item.effect}'''
 
 
+def format_item_inline_result(item: tables.Item):
+    return {
+        'type': 'article',
+        'id': f'item#{item.id}',
+        'title': f'{item.name} (item)',
+        'input_message_content': {
+            'message_text': format_item(item),
+            'parse_mode': 'Markdown',
+        },
+        'description': str(item.short_effect),
+    }
+
+
 def format_move(move: tables.Move):
     return f'''*{move.name}* (move)
 Type: {move.type.name}
@@ -123,6 +136,8 @@ def format_inline_result(session, result):
         return format_pokemon_inline_result(session, result.pokemon)
     elif isinstance(result, tables.Ability):
         return format_ability_inline_result(result)
+    elif isinstance(result, tables.Item):
+        return format_item_inline_result(result)
 
 
 def handle_text_message(session, lookup, message):

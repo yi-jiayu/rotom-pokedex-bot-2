@@ -25,6 +25,11 @@ def ability(session):
     return util.get(session, tables.Ability, 'pixilate')
 
 
+@pytest.fixture
+def item(session):
+    return util.get(session, tables.Item, 'soul-dew')
+
+
 class TestPokemon:
     def test_format_pokemon(self, session, pokemon):
         expected = '''*Torterra (#389)*
@@ -93,7 +98,7 @@ Turns the bearer's Normal-type moves into Fairy moves.  Moves changed by this ab
     def test_format_ability_inline_result(self, ability):
         expected = {
             'type': 'article',
-            'id': 'item#182',
+            'id': 'ability#182',
             'title': 'Pixilate (ability)',
             'input_message_content': {
                 'message_text': '''*Pixilate* (ability)
@@ -103,4 +108,27 @@ Turns the bearer's Normal-type moves into Fairy moves.  Moves changed by this ab
             'description': "Turns the bearer's Normal moves into Fairy moves and strengthens them to 1.3× their power.",
         }
         actual = format_ability_inline_result(ability)
+        assert actual == expected
+
+
+class TestItem:
+    def test_format_item(self, item):
+        expected = '''*Soul Dew* (item)
+Held by Latias or Latios: Increases the holder's Special Attack and Special Defense by 50%.'''
+        actual = format_item(item)
+        assert actual == expected
+
+    def test_format_item_inline_result(self, item):
+        expected = {
+            'type': 'article',
+            'id': 'item#202',
+            'title': 'Soul Dew (item)',
+            'input_message_content': {
+                'message_text': '''*Soul Dew* (item)
+Held by Latias or Latios: Increases the holder's Special Attack and Special Defense by 50%.''',
+                'parse_mode': 'Markdown',
+            },
+            'description': "Raises Latias and Latios's Special Attack and Special Defense by 50%.",
+        }
+        actual = format_item_inline_result(item)
         assert actual == expected
