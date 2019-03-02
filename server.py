@@ -95,8 +95,11 @@ def make_app():
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--set-webhook', action='store_true', help='Sets the bot webhook before starting.')
+    parser.add_argument('-p', '--port', help='Port to listen on')
     args = parser.parse_args()
 
     if args.set_webhook:
@@ -113,5 +116,7 @@ if __name__ == "__main__":
         set_webhook(bot_token, host)
 
     app = make_app()
-    app.listen(8080)
+
+    port = args.port or os.getenv('PORT') or 8080
+    app.listen(port)
     tornado.ioloop.IOLoop.current().start()
