@@ -1,3 +1,6 @@
+[![CircleCI](https://circleci.com/gh/yi-jiayu/rotom-pokedex-bot-2.svg?style=svg)](https://circleci.com/gh/yi-jiayu/rotom-pokedex-bot-2)
+[![codecov](https://codecov.io/gh/yi-jiayu/rotom-pokedex-bot-2/branch/master/graph/badge.svg)](https://codecov.io/gh/yi-jiayu/rotom-pokedex-bot-2)
+
 # Rotom Pokédex Bot 2
 A rewrite of https://github.com/yi-jiayu/rotom-pokedex-bot to use data from
 https://github.com/veekun/pokedex. 
