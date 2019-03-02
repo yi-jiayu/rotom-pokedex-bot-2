@@ -28,4 +28,4 @@ jobs:
           command: pipenv run pytest --cov=./
       - run:
           name: upload coverage
-          command: bash <(curl -s https://codecov.io/bash)
+          command: pipenv run bash <(curl -s https://codecov.io/bash)
