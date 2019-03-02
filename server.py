@@ -11,14 +11,31 @@ import tornado.httpclient
 import tornado.ioloop
 import tornado.web
 
+import type_efficacy
+
 session = connect()
 lookup = PokedexLookup(session=session)
 
 
-def format_pokemon(pokemon: tables.Pokemon):
-    return f'''*{pokemon.name} (#{pokemon.id})*
-{'/'.join(t.name for t in pokemon.types)}
-Abilities: {', '.join(a.name for a in pokemon.abilities)}'''
+def format_type_effectiveness(type_effectiveness):
+    weaknesses = ', '.join(f'{t} ({e:.2g}x)' for t, e in type_effectiveness.items() if e > 1)
+    resistances = ', '.join(f'{t} ({e:.2g}x)' for t, e in type_effectiveness.items() if 1 > e > 0)
+    immunities = ', '.join(f'{t} ({e:.2g}x)' for t, e in type_effectiveness.items() if e == 0)
+    return '\n'.join(
+        f'{k}: {v}' for k, v in (('Weaknesses', weaknesses),
+                                 ('Resistances', resistances),
+                                 ('Immunities', immunities)) if v)
+
+
+def format_pokemon(session, pokemon: tables.Pokemon):
+    type_effectiveness = type_efficacy.get_type_effectiveness(session, pokemon)
+    return f'''*{pokemon.name} (#{pokemon.id:03})*
+Type: {'/'.join(t.name for t in pokemon.types)}
+{format_type_effectiveness(type_effectiveness)}
+Abilities: {', '.join(a.name for a in pokemon.abilities)}
+Hidden ability: {pokemon.hidden_ability and pokemon.hidden_ability.name}
+Height: {pokemon.height / 10} m
+Weight: {pokemon.weight / 10} kg'''
 
 
 def format_ability(ability: tables.Ability):
@@ -40,11 +57,11 @@ PP: {move.pp}
 {move.effect}'''
 
 
-def format_result(result):
+def format_result(session, result):
     if isinstance(result, tables.PokemonSpecies):
-        return format_pokemon(result.default_pokemon)
+        return format_pokemon(session, result.default_pokemon)
     elif isinstance(result, tables.PokemonForm):
-        return format_pokemon(result.pokemon)
+        return format_pokemon(session, result.pokemon)
     elif isinstance(result, tables.Item):
         return format_item(result)
     elif isinstance(result, tables.Ability):
@@ -54,7 +71,8 @@ def format_result(result):
 
 
 class WebhookHandler(tornado.web.RequestHandler):
-    def initialize(self, lookup):
+    def initialize(self, session, lookup):
+        self.session = session
         self.lookup = lookup
 
     def post(self):
@@ -67,7 +85,7 @@ class WebhookHandler(tornado.web.RequestHandler):
             response = None
             if hits:
                 best = hits[0].object
-                response = format_result(best)
+                response = format_result(self.session, best)
             response = response or 'No results!'
             self.write({'method': 'sendMessage', 'chat_id': update['message']['chat']['id'], 'text': response,
                         'parse_mode': 'markdown'})
@@ -90,7 +108,7 @@ def set_webhook(bot_token, host):
 
 def make_app():
     return tornado.web.Application([
-        ('/webhook', WebhookHandler, dict(lookup=lookup)),
+        ('/webhook', WebhookHandler, dict(session=session, lookup=lookup)),
     ])
 
 

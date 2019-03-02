@@ -4,13 +4,15 @@ https://github.com/veekun/pokedex.
 
 ## Roadmap
 
-- [ ] Pokémon summary
-- [ ] Abilities
-- [ ] Moves
-- [ ] Pokémon forms
-- [ ] Items
+- [x] Pokémon summary
+- [x] Abilities
+- [x] Moves
+- [x] Pokémon forms
+- [x] Items
 - [ ] Pokémon locations
 - [ ] Pokémon base stats
+
+- [ ] Inline mode
 
 ## Dependencies
 
