@@ -166,5 +166,5 @@ Inflicts regular damage, then lowers the user's Special Attack by two stages.'''
             },
             'description': "Lowers the user's Special Attack by two stages after inflicting damage.",
         }
-        actual = format_move_inline_Result(move)
+        actual = format_move_inline_result(move)
         assert actual == expected

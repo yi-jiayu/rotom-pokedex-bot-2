@@ -116,7 +116,7 @@ PP: {move.pp}
 {move.effect}'''
 
 
-def format_move_inline_Result(move: tables.Move):
+def format_move_inline_result(move: tables.Move):
     return {
         'type': 'article',
         'id': f'move#{move.id}',
@@ -152,7 +152,7 @@ def format_inline_result(session, result):
     elif isinstance(result, tables.Item):
         return format_item_inline_result(result)
     elif isinstance(result, tables.Move):
-        return format_move_inline_Result(result)
+        return format_move_inline_result(result)
 
 
 def handle_text_message(session, lookup, message):
@@ -193,7 +193,7 @@ class WebhookHandler(tornado.web.RequestHandler):
         self.session = session
         self.lookup = lookup
 
-    def post(self):
+    async def post(self):
         update = json.loads(self.request.body)
         if 'message' in update and 'text' in update['message']:
             response = handle_text_message(self.session, self.lookup, update['message'])
