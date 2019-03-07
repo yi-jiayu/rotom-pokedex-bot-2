@@ -168,3 +168,16 @@ Inflicts regular damage, then lowers the user's Special Attack by two stages.'''
         }
         actual = format_move_inline_result(move)
         assert actual == expected
+
+
+@pytest.mark.parametrize(('section', 'reply_markup'), [
+    (entries.Section(''), None),
+    (entries.Section('', children=[('Base stats', 'pokemon/1/base_stats')]),
+     [('Base stats', 'pokemon/1/base_stats')]),
+    (entries.Section('', parent=('', 'pokemon/1/')),
+     [('Back', 'pokemon/1/')]),
+])
+def test_reply_markup_for_section(section, reply_markup):
+    expected = {'inline_keyboard': [[{'text': text, 'callback_data': data}]
+                                    for text, data in reply_markup]} if reply_markup else None
+    assert reply_markup_for_section(section) == expected

@@ -1,11 +1,13 @@
+import asyncio
 import argparse
 import json
 import logging
 import os
 import sys
 
-from pokedex.lookup import PokedexLookup
-from pokedex.db import connect, tables
+from typing import Dict, Optional
+
+from pokedex.db import tables
 
 import sentry_sdk
 
@@ -13,14 +15,13 @@ import tornado.httpclient
 import tornado.ioloop
 import tornado.web
 
+import entries
 import log
 import type_efficacy
+from app import lookup, session
 
 # 40 characters should be more than enough to query anything in the Pokédex
 MAX_QUERY_LENGTH = 40
-
-session = connect()
-lookup = PokedexLookup(session=session)
 
 
 def format_type_effectiveness(type_effectiveness):
@@ -155,10 +156,10 @@ def format_inline_result(session, result):
         return format_move_inline_result(result)
 
 
-def handle_text_message(session, lookup, message):
+def handle_text_message(message):
     query = message['text'][:MAX_QUERY_LENGTH]
     chat_id = message['chat']['id']
-    hits = lookup.lookup(query)
+    hits = lookup(query)
     log.info(query=query, hits=hits, type='text_message', chat_id=chat_id, message_id=message['message_id'])
     response = None
     if hits:
@@ -171,11 +172,11 @@ def handle_text_message(session, lookup, message):
             'parse_mode': 'markdown'}
 
 
-def handle_inline_query(session, lookup, inline_query):
+def handle_inline_query(inline_query):
     query = inline_query['query'][:MAX_QUERY_LENGTH]
     inline_query_id = inline_query['id']
     if query:
-        hits = lookup.lookup(query)
+        hits = lookup(query)
         log.info(query=query, hits=hits, type='inline_query', inline_query_id=inline_query_id)
         results = list(filter(None, (format_inline_result(session, h.object) for h in hits)))
         serialised_results = json.dumps(results) if results else ''
@@ -188,20 +189,67 @@ def handle_inline_query(session, lookup, inline_query):
     }
 
 
-class WebhookHandler(tornado.web.RequestHandler):
-    def initialize(self, session, lookup):
-        self.session = session
-        self.lookup = lookup
+def get_entry(table: str, id_: int) -> Optional[entries.Entry]:
+    if table == 'pokemon':
+        return entries.PokemonEntry.from_id(id_)
 
+
+def reply_markup_for_section(section) -> Optional[Dict]:
+    buttons = []
+    if section.parent:
+        buttons.append({'text': 'Back', 'callback_data': section.parent[1]})
+    if not section.children:
+        for name, path in section.siblings:
+            buttons.append({'text': name, 'callback_data': path})
+    for name, path in section.children:
+        buttons.append({'text': name, 'callback_data': path})
+    if buttons:
+        return {'inline_keyboard': [[b] for b in buttons]}
+
+
+async def answer_callback_query(callback_query, text=''):
+    pass
+
+
+async def update_message(callback_query, text, reply_markup):
+    pass
+
+
+async def handle_callback_query(callback_query):
+    try:
+        data = callback_query['data']
+        table, id_, path = data.split('/', maxsplit=3)
+        entry = get_entry(table, int(id_))
+        if entry is None:
+            raise ValueError
+        section = entry.section(path)
+        if section is None:
+            raise ValueError
+        text = section.content
+        reply_markup = reply_markup_for_section(section)
+        await asyncio.gather(
+            answer_callback_query(callback_query),
+            update_message(callback_query, text, reply_markup),
+        )
+    except ValueError:
+        return {'method': 'answerCallbackQuery',
+                'callback_query_id': callback_query['id'],
+                'text': 'Invalid callback data!'}
+
+
+class WebhookHandler(tornado.web.RequestHandler):
     async def post(self):
         update = json.loads(self.request.body)
         if 'message' in update and 'text' in update['message']:
-            response = handle_text_message(self.session, self.lookup, update['message'])
+            response = handle_text_message(update['message'])
             self.write(response)
         elif 'inline_query' in update:
-            print(update['inline_query'])
-            response = handle_inline_query(self.session, self.lookup, update['inline_query'])
+            response = handle_inline_query(update['inline_query'])
             self.write(response)
+        elif 'callback_query' in update:
+            response = await handle_callback_query(update['callback_query'])
+            if response:
+                self.write(response)
 
 
 def set_webhook(bot_token, host):
@@ -219,7 +267,7 @@ def set_webhook(bot_token, host):
 
 def make_app():
     return tornado.web.Application([
-        ('/webhook', WebhookHandler, dict(session=session, lookup=lookup)),
+        ('/webhook', WebhookHandler),
     ])
 
 
