@@ -1,7 +1,8 @@
+import json
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass, field
 from collections import namedtuple
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from pokedex.db import tables, util
 
@@ -43,11 +44,25 @@ class Section:
 
 
 class Entry(metaclass=ABCMeta):
+    slug: str
+
     def section(self, path) -> Optional[Section]:
         return self.default_section()
 
     @abstractmethod
     def default_section(self) -> Section:
+        pass
+
+    @abstractmethod
+    def title(self):
+        pass
+
+    @abstractmethod
+    def description(self):
+        pass
+
+    @abstractmethod
+    def thumbnail(self):
         pass
 
     @staticmethod
@@ -67,10 +82,20 @@ class Entry(metaclass=ABCMeta):
 class PokemonEntry(Entry):
     def __init__(self, pokemon: tables.Pokemon):
         self.pokemon = pokemon
-        self.prefix = f'pokemon/{pokemon.id}'
+        self.slug = f'pokemon/{pokemon.id}'
+
+    def title(self):
+        return f'{self.pokemon.name} (#{self.pokemon.id:03})'
+
+    def description(self):
+        return '/'.join(t.name for t in self.pokemon.types)
+
+    def thumbnail(self):
+        if self.pokemon.id < 10000:
+            return f'https://assets.pokemon.com/assets/cms2/img/pokedex/detail/{self.pokemon.id:03}.png'
 
     @staticmethod
-    def from_id(id_: int) -> Optional['PokemonEntry']:
+    def from_pokemon_id(id_: int) -> Optional['PokemonEntry']:
         try:
             pokemon = util.get(session, tables.Pokemon, id=id_)
             return PokemonEntry(pokemon)
@@ -80,7 +105,7 @@ class PokemonEntry(Entry):
     def default_section(self) -> Section:
         return Section(
             content=self.summary(),
-            children=[SectionReference('Base stats', f'{self.prefix}/base_stats')]
+            children=[SectionReference('Base stats', f'{self.slug}/base_stats')]
         )
 
     def section(self, path: str) -> Optional[Section]:
@@ -89,7 +114,7 @@ class PokemonEntry(Entry):
         elif path == 'base_stats':
             return Section(
                 content=self.base_stats(),
-                parent=SectionReference('', f'{self.prefix}/'),
+                parent=SectionReference('', f'{self.slug}/'),
             )
 
     def summary(self):
@@ -116,6 +141,16 @@ Weight: {self.pokemon.weight / 10} kg'''
 class ItemEntry(Entry):
     def __init__(self, item: tables.Item):
         self.item = item
+        self.slug = f'item/{self.item.id}'
+
+    def title(self):
+        return f'{self.item.name} (item)'
+
+    def description(self):
+        return f'{self.item.short_effect}'
+
+    def thumbnail(self):
+        pass
 
     def default_section(self) -> Section:
         return Section(self.summary())
@@ -128,6 +163,16 @@ class ItemEntry(Entry):
 class AbilityEntry(Entry):
     def __init__(self, ability) -> None:
         self.ability = ability
+        self.slug = f'ability/{self.ability.id}'
+
+    def title(self):
+        return f'{self.ability.name} (ability)'
+
+    def description(self):
+        return f'{self.ability.short_effect}'
+
+    def thumbnail(self):
+        pass
 
     def default_section(self) -> Section:
         return Section(self.summary())
@@ -140,6 +185,16 @@ class AbilityEntry(Entry):
 class MoveEntry(Entry):
     def __init__(self, move):
         self.move = move
+        self.slug = f'move/{self.move.id}'
+
+    def title(self):
+        return f'{self.move.name} (move)'
+
+    def description(self):
+        return f'{self.move.short_effect}'
+
+    def thumbnail(self):
+        pass
 
     def default_section(self) -> Section:
         return Section(self.summary())
@@ -151,3 +206,34 @@ Power: {self.move.power}
 Accuracy: {self.move.accuracy}
 PP: {self.move.pp}
 {self.move.effect}'''
+
+
+def reply_markup_for_section(section) -> Optional[Dict]:
+    buttons = []
+    if section.parent:
+        buttons.append({'text': 'Back', 'callback_data': section.parent[1]})
+    if not section.children:
+        for name, path in section.siblings:
+            buttons.append({'text': name, 'callback_data': path})
+    for name, path in section.children:
+        buttons.append({'text': name, 'callback_data': path})
+    if buttons:
+        return {'inline_keyboard': [[b] for b in buttons]}
+
+
+def inline_result_for_entry(entry: Entry):
+    result = {
+        'type': 'article',
+        'id': entry.slug,
+        'title': entry.title(),
+        'description': entry.description(),
+    }
+    default_section = entry.default_section()
+    result['input_message_content'] = {'message_text': default_section.content, 'parse_mode': 'Markdown'}
+    reply_markup = reply_markup_for_section(default_section)
+    if reply_markup:
+        result['reply_markup'] = reply_markup
+    thumbnail = entry.thumbnail()
+    if thumbnail:
+        result['thumb_url'] = thumbnail
+    return result

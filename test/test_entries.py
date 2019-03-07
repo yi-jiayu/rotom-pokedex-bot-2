@@ -88,12 +88,36 @@ class TestEntry:
 
 
 class TestPokemonEntry:
-    def test_from_id(self):
-        entry = PokemonEntry.from_id(1)
+    def test_slug(self, pokemon_entry):
+        expected = 'pokemon/1'
+        actual = pokemon_entry.slug
+        assert actual == expected
+
+    def test_title(self, pokemon_entry):
+        expected = 'Bulbasaur (#001)'
+        actual = pokemon_entry.title()
+        assert actual == expected
+
+    def test_description(self, pokemon_entry):
+        expected = 'Grass/Poison'
+        actual = pokemon_entry.description()
+        assert actual == expected
+
+    def test_thumbnail_when_available(self, pokemon_entry):
+        expected = 'https://assets.pokemon.com/assets/cms2/img/pokedex/detail/001.png'
+        actual = pokemon_entry.thumbnail()
+        assert actual == expected
+
+    def test_thumbnail_when_not_available(self, pokemon_form):
+        entry = PokemonEntry(pokemon_form.pokemon)
+        assert entry.thumbnail() is None
+
+    def test_from_pokemon_id(self):
+        entry = PokemonEntry.from_pokemon_id(1)
         assert entry.pokemon.id == 1
 
-    def test_from_nonexistent_id(self):
-        entry = PokemonEntry.from_id(-1)
+    def test_from_nonexistent_pokemon_id(self):
+        entry = PokemonEntry.from_pokemon_id(-1)
         assert entry is None
 
     def test_nonexistent_section(self, pokemon_entry: PokemonEntry):
@@ -130,24 +154,131 @@ Speed:           45
         )
         assert actual == expected
 
+    def test_inline_result(self, pokemon_entry):
+        expected = {
+            'type': 'article',
+            'id': 'pokemon/1',
+            'title': 'Bulbasaur (#001)',
+            'description': 'Grass/Poison',
+            'input_message_content': {
+                'message_text': '''*Bulbasaur (#001)*
+Type: Grass/Poison
+Weaknesses: Flying (2x), Fire (2x), Psychic (2x), Ice (2x)
+Resistances: Fighting (0.5x), Water (0.5x), Grass (0.25x), Electric (0.5x), Fairy (0.5x)
+Abilities: Overgrow
+Hidden ability: Chlorophyll
+Height: 0.7 m
+Weight: 6.9 kg
+[Image](https://assets.pokemon.com/assets/cms2/img/pokedex/full/001.png)''',
+                'parse_mode': 'Markdown',
+            },
+            'reply_markup': {'inline_keyboard': [[{'text': 'Base stats', 'callback_data': 'pokemon/1/base_stats'}]]},
+            'thumb_url': 'https://assets.pokemon.com/assets/cms2/img/pokedex/detail/001.png'}
+        actual = inline_result_for_entry(pokemon_entry)
+        assert actual == expected
+
 
 class TestItemEntry:
+    def test_slug(self, item_entry):
+        expected = 'item/202'
+        actual = item_entry.slug
+        assert actual == expected
+
+    def test_title(self, item_entry):
+        expected = 'Soul Dew (item)'
+        actual = item_entry.title()
+        assert actual == expected
+
+    def test_description(self, item_entry):
+        expected = "Raises Latias and Latios's Special Attack and Special Defense by 50%."
+        actual = item_entry.description()
+        assert actual == expected
+
+    def test_thumbnail(self, item_entry):
+        assert item_entry.thumbnail() is None
+
     def test_default_section(self, item_entry):
         expected = Section('''*Soul Dew* (item)
 Held by Latias or Latios: Increases the holder's Special Attack and Special Defense by 50%.''')
         actual = item_entry.default_section()
         assert actual == expected
 
+    def test_inline_result(self, item_entry):
+        expected = {
+            'type': 'article',
+            'id': 'item/202',
+            'title': 'Soul Dew (item)',
+            'input_message_content': {
+                'message_text': '''*Soul Dew* (item)
+Held by Latias or Latios: Increases the holder's Special Attack and Special Defense by 50%.''',
+                'parse_mode': 'Markdown',
+            },
+            'description': "Raises Latias and Latios's Special Attack and Special Defense by 50%.",
+        }
+        actual = inline_result_for_entry(item_entry)
+        assert actual == expected
+
 
 class TestAbilityEntry:
+    def test_slug(self, ability_entry):
+        expected = 'ability/182'
+        actual = ability_entry.slug
+        assert actual == expected
+
+    def test_title(self, ability_entry):
+        expected = 'Pixilate (ability)'
+        actual = ability_entry.title()
+        assert actual == expected
+
+    def test_description(self, ability_entry):
+        expected = "Turns the bearer's Normal moves into Fairy moves and strengthens them to 1.3× their power."
+        actual = ability_entry.description()
+        assert actual == expected
+
+    def test_thumbnail(self, ability_entry):
+        assert ability_entry.thumbnail() is None
+
     def test_default_section(self, ability_entry):
         expected = Section('''*Pixilate* (ability)
 Turns the bearer's Normal-type moves into Fairy moves.  Moves changed by this ability have 1.3× their power.''')
         actual = ability_entry.default_section()
         assert actual == expected
 
+    def test_inline_result(self, ability_entry):
+        expected = {
+            'type': 'article',
+            'id': 'ability/182',
+            'title': 'Pixilate (ability)',
+            'input_message_content': {
+                'message_text': '''*Pixilate* (ability)
+Turns the bearer's Normal-type moves into Fairy moves.  Moves changed by this ability have 1.3× their power.''',
+                'parse_mode': 'Markdown',
+            },
+            'description': "Turns the bearer's Normal moves into Fairy moves and strengthens them to 1.3× their power.",
+        }
+        actual = inline_result_for_entry(ability_entry)
+        assert actual == expected
+
 
 class TestMoveEntry:
+    def test_slug(self, move_entry):
+        expected = 'move/354'
+        actual = move_entry.slug
+        assert actual == expected
+
+    def test_title(self, move_entry):
+        expected = 'Psycho Boost (move)'
+        actual = move_entry.title()
+        assert actual == expected
+
+    def test_description(self, move_entry):
+        expected = "Lowers the user's Special Attack by two stages after inflicting damage."
+        actual = move_entry.description()
+        assert actual == expected
+
+    def test_thumbnail(self, move_entry):
+        assert move_entry.thumbnail() is None
+
     def test_default_section(self, move_entry):
         expected = Section('''*Psycho Boost* (move)
 Type: Psychic
@@ -157,3 +288,35 @@ PP: 5
 Inflicts regular damage, then lowers the user's Special Attack by two stages.''')
         actual = move_entry.default_section()
         assert actual == expected
+
+    def test_inline_result(self, move_entry):
+        expected = {
+            'type': 'article',
+            'id': 'move/354',
+            'title': 'Psycho Boost (move)',
+            'input_message_content': {
+                'message_text': '''*Psycho Boost* (move)
+Type: Psychic
+Power: 140
+Accuracy: 90
+PP: 5
+Inflicts regular damage, then lowers the user's Special Attack by two stages.''',
+                'parse_mode': 'Markdown',
+            },
+            'description': "Lowers the user's Special Attack by two stages after inflicting damage.",
+        }
+        actual = inline_result_for_entry(move_entry)
+        assert actual == expected
+
+
+@pytest.mark.parametrize(('section', 'reply_markup'), [
+    (Section(''), None),
+    (Section('', children=[('Base stats', 'pokemon/1/base_stats')]),
+     [('Base stats', 'pokemon/1/base_stats')]),
+    (Section('', parent=('', 'pokemon/1/')),
+     [('Back', 'pokemon/1/')]),
+])
+def test_reply_markup_for_section(section, reply_markup):
+    expected = {'inline_keyboard': [[{'text': text, 'callback_data': data}]
+                                    for text, data in reply_markup]} if reply_markup else None
+    assert reply_markup_for_section(section) == expected

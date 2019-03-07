@@ -5,7 +5,7 @@ import logging
 import os
 import sys
 
-from typing import Dict, Optional
+from typing import Optional
 
 from pokedex.db import tables
 
@@ -169,7 +169,7 @@ def handle_text_message(message):
         if entry:
             section = entry.default_section()
             text = section.content
-            reply_markup = reply_markup_for_section(section)
+            reply_markup = entries.reply_markup_for_section(section)
     text = text or 'No results!'
     response = {'method': 'sendMessage',
                 'chat_id': chat_id,
@@ -186,7 +186,8 @@ def handle_inline_query(inline_query):
     if query:
         hits = lookup(query)
         log.info(query=query, hits=hits, type='inline_query', inline_query_id=inline_query_id)
-        results = list(filter(None, (format_inline_result(session, h.object) for h in hits)))
+        entries_ = filter(None, (entries.Entry.from_model(h.object) for h in hits))
+        results = list(entries.inline_result_for_entry(e) for e in entries_)
         serialised_results = json.dumps(results) if results else ''
     else:
         serialised_results = ''
@@ -199,20 +200,7 @@ def handle_inline_query(inline_query):
 
 def get_entry(table: str, id_: int) -> Optional[entries.Entry]:
     if table == 'pokemon':
-        return entries.PokemonEntry.from_id(id_)
-
-
-def reply_markup_for_section(section) -> Optional[Dict]:
-    buttons = []
-    if section.parent:
-        buttons.append({'text': 'Back', 'callback_data': section.parent[1]})
-    if not section.children:
-        for name, path in section.siblings:
-            buttons.append({'text': name, 'callback_data': path})
-    for name, path in section.children:
-        buttons.append({'text': name, 'callback_data': path})
-    if buttons:
-        return {'inline_keyboard': [[b] for b in buttons]}
+        return entries.PokemonEntry.from_pokemon_id(id_)
 
 
 async def answer_callback_query(http_client, bot_token, callback_query, text=''):
@@ -255,7 +243,7 @@ async def handle_callback_query(http_client, bot_token, callback_query):
         if section is None:
             raise ValueError
         text = section.content
-        reply_markup = reply_markup_for_section(section)
+        reply_markup = entries.reply_markup_for_section(section)
         results = await asyncio.gather(
             answer_callback_query(http_client, bot_token, callback_query),
             update_message(http_client, bot_token, callback_query, text, reply_markup),
@@ -284,7 +272,6 @@ class WebhookHandler(tornado.web.RequestHandler):
             response = handle_inline_query(update['inline_query'])
             self.write(response)
         elif 'callback_query' in update:
-            print(update['callback_query'])
             response = await handle_callback_query(self.http_client, self.bot_token, update['callback_query'])
             if response:
                 self.write(response)
