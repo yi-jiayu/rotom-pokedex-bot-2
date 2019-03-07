@@ -118,12 +118,14 @@ Weight: 6.9 kg
         actual = pokemon_entry.section('base_stats')
         expected = Section(
             content='''*Bulbasaur (#001)*
+```
 HP:              45
 Attack:          49
 Defense:         49
 Special Attack:  65
 Special Defense: 65
-Speed:           45''',
+Speed:           45
+```''',
             parent=SectionReference('', 'pokemon/1/')
         )
         assert actual == expected

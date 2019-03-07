@@ -108,7 +108,9 @@ Weight: {self.pokemon.weight / 10} kg'''
     def base_stats(self):
         base_stats = '\n'.join(f'{f"{s.stat.name}:":16} {s.base_stat}' for s in self.pokemon.stats)
         return f'''*{self.pokemon.name} (#{self.pokemon.id:03})*
-{base_stats}'''
+```
+{base_stats}
+```'''
 
 
 class ItemEntry(Entry):

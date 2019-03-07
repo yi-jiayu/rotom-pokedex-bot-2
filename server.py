@@ -161,15 +161,23 @@ def handle_text_message(message):
     chat_id = message['chat']['id']
     hits = lookup(query)
     log.info(query=query, hits=hits, type='text_message', chat_id=chat_id, message_id=message['message_id'])
-    response = None
+    text = None
+    reply_markup = None
     if hits:
         best = hits[0].object
-        response = format_result(session, best)
-    response = response or 'No results!'
-    return {'method': 'sendMessage',
-            'chat_id': chat_id,
-            'text': response,
-            'parse_mode': 'markdown'}
+        entry = entries.Entry.from_model(best)
+        if entry:
+            section = entry.default_section()
+            text = section.content
+            reply_markup = reply_markup_for_section(section)
+    text = text or 'No results!'
+    response = {'method': 'sendMessage',
+                'chat_id': chat_id,
+                'text': text,
+                'parse_mode': 'markdown'}
+    if reply_markup:
+        response['reply_markup'] = json.dumps(reply_markup)
+    return response
 
 
 def handle_inline_query(inline_query):
@@ -207,15 +215,36 @@ def reply_markup_for_section(section) -> Optional[Dict]:
         return {'inline_keyboard': [[b] for b in buttons]}
 
 
-async def answer_callback_query(callback_query, text=''):
-    pass
+async def answer_callback_query(http_client, bot_token, callback_query, text=''):
+    url = f'https://api.telegram.org/bot{bot_token}/answerCallbackQuery'
+    data = {'callback_query_id': callback_query['id']}
+    if text:
+        data['text'] = text
+    body = json.dumps(data)
+    headers = {'Content-Type': 'application/json'}
+    request = tornado.httpclient.HTTPRequest(url, 'POST', headers, body)
+    return await http_client.fetch(request, raise_error=False)
 
 
-async def update_message(callback_query, text, reply_markup):
-    pass
+async def update_message(http_client, bot_token, callback_query, text, reply_markup):
+    url = f'https://api.telegram.org/bot{bot_token}/editMessageText'
+    data = {'text': text, 'parse_mode': 'Markdown'}
+    if 'inline_message_id' in callback_query:
+        data['inline_message_id'] = callback_query['inline_message_id']
+    else:
+        data['chat_id'] = callback_query['message']['chat']['id']
+        data['message_id'] = callback_query['message']['message_id']
+    if text:
+        data['text'] = text
+    if reply_markup:
+        data['reply_markup'] = json.dumps(reply_markup)
+    body = json.dumps(data)
+    headers = {'Content-Type': 'application/json'}
+    request = tornado.httpclient.HTTPRequest(url, 'POST', headers, body)
+    return await http_client.fetch(request, raise_error=False)
 
 
-async def handle_callback_query(callback_query):
+async def handle_callback_query(http_client, bot_token, callback_query):
     try:
         data = callback_query['data']
         table, id_, path = data.split('/', maxsplit=3)
@@ -227,10 +256,14 @@ async def handle_callback_query(callback_query):
             raise ValueError
         text = section.content
         reply_markup = reply_markup_for_section(section)
-        await asyncio.gather(
-            answer_callback_query(callback_query),
-            update_message(callback_query, text, reply_markup),
+        results = await asyncio.gather(
+            answer_callback_query(http_client, bot_token, callback_query),
+            update_message(http_client, bot_token, callback_query, text, reply_markup),
         )
+        for r in results:
+            details = json.loads(r.body)
+            if not details.get('ok'):
+                logging.warning(details)
     except ValueError:
         return {'method': 'answerCallbackQuery',
                 'callback_query_id': callback_query['id'],
@@ -238,6 +271,10 @@ async def handle_callback_query(callback_query):
 
 
 class WebhookHandler(tornado.web.RequestHandler):
+    def initialize(self, bot_token, http_client):
+        self.bot_token = bot_token
+        self.http_client: tornado.httpclient.AsyncHTTPClient = http_client
+
     async def post(self):
         update = json.loads(self.request.body)
         if 'message' in update and 'text' in update['message']:
@@ -247,7 +284,8 @@ class WebhookHandler(tornado.web.RequestHandler):
             response = handle_inline_query(update['inline_query'])
             self.write(response)
         elif 'callback_query' in update:
-            response = await handle_callback_query(update['callback_query'])
+            print(update['callback_query'])
+            response = await handle_callback_query(self.http_client, self.bot_token, update['callback_query'])
             if response:
                 self.write(response)
 
@@ -265,9 +303,10 @@ def set_webhook(bot_token, host):
     client.close()
 
 
-def make_app():
+def make_app(bot_token):
+    http_client = tornado.httpclient.AsyncHTTPClient()
     return tornado.web.Application([
-        ('/webhook', WebhookHandler),
+        ('/webhook', WebhookHandler, {'bot_token': bot_token, 'http_client': http_client}),
     ])
 
 
@@ -280,11 +319,12 @@ if __name__ == "__main__":
     parser.add_argument('-p', '--port', help='Port to listen on')
     args = parser.parse_args()
 
+    bot_token = os.getenv('ROTOM_BOT_TOKEN')
+    if not bot_token:
+        logging.critical('ROTOM_BOT_TOKEN not set')
+        sys.exit(1)
+
     if args.set_webhook:
-        bot_token = os.getenv('ROTOM_BOT_TOKEN')
-        if not bot_token:
-            logging.critical('ROTOM_BOT_TOKEN not set')
-            sys.exit(1)
 
         host = os.getenv('ROTOM_HOST')
         if not host:
@@ -293,7 +333,7 @@ if __name__ == "__main__":
 
         set_webhook(bot_token, host)
 
-    app = make_app()
+    app = make_app(bot_token)
 
     port = args.port or os.getenv('PORT') or 8080
     app.listen(port)
