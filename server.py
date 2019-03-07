@@ -4,10 +4,7 @@ import json
 import logging
 import os
 import sys
-
 from typing import Optional
-
-from pokedex.db import tables
 
 import sentry_sdk
 
@@ -17,143 +14,10 @@ import tornado.web
 
 import entries
 import log
-import type_efficacy
-from app import lookup, session
+from app import lookup
 
 # 40 characters should be more than enough to query anything in the Pokédex
 MAX_QUERY_LENGTH = 40
-
-
-def format_type_effectiveness(type_effectiveness):
-    weaknesses = ', '.join(f'{t} ({e:.2g}x)' for t, e in type_effectiveness.items() if e > 1)
-    resistances = ', '.join(f'{t} ({e:.2g}x)' for t, e in type_effectiveness.items() if 1 > e > 0)
-    immunities = ', '.join(f'{t} ({e:.2g}x)' for t, e in type_effectiveness.items() if e == 0)
-    return '\n'.join(
-        f'{k}: {v}' for k, v in (('Weaknesses', weaknesses),
-                                 ('Resistances', resistances),
-                                 ('Immunities', immunities)) if v)
-
-
-def pokemon_full_image_url(pokemon_id):
-    return f'https://assets.pokemon.com/assets/cms2/img/pokedex/full/{pokemon_id:03}.png'
-
-
-def pokemon_thumbnail_image_url(pokemon_id):
-    return f'https://assets.pokemon.com/assets/cms2/img/pokedex/detail/{pokemon_id:03}.png'
-
-
-def format_pokemon(session, pokemon: tables.Pokemon):
-    type_effectiveness = type_efficacy.get_type_effectiveness(session, pokemon)
-    s = f'''*{pokemon.name} (#{pokemon.id:03})*
-Type: {'/'.join(t.name for t in pokemon.types)}
-{format_type_effectiveness(type_effectiveness)}
-Abilities: {', '.join(a.name for a in pokemon.abilities)}
-Hidden ability: {pokemon.hidden_ability and pokemon.hidden_ability.name}
-Height: {pokemon.height / 10} m
-Weight: {pokemon.weight / 10} kg'''
-    if pokemon.id < 10000:
-        s += f'\n[Image]({pokemon_full_image_url(pokemon.id)})'
-    return s
-
-
-def format_pokemon_inline_result(session, pokemon: tables.Pokemon):
-    result = {
-        'type': 'article',
-        'id': f'pokemon#{pokemon.id}',
-        'title': f'{pokemon.name} (#{pokemon.id:03})',
-        'input_message_content': {
-            'message_text': format_pokemon(session, pokemon),
-            'parse_mode': 'Markdown',
-        },
-        'description': '/'.join(t.name for t in pokemon.types),
-    }
-    if pokemon.id < 10000:
-        result['thumb_url'] = pokemon_thumbnail_image_url(pokemon.id)
-    return result
-
-
-def format_ability(ability: tables.Ability):
-    return f'''*{ability.name}* (ability)
-{ability.effect}'''
-
-
-def format_ability_inline_result(ability: tables.Ability):
-    return {
-        'type': 'article',
-        'id': f'ability#{ability.id}',
-        'title': f'{ability.name} (ability)',
-        'input_message_content': {
-            'message_text': format_ability(ability),
-            'parse_mode': 'Markdown',
-        },
-        'description': str(ability.short_effect),
-    }
-
-
-def format_item(item: tables.Item):
-    return f'''*{item.name}* (item)
-{item.effect}'''
-
-
-def format_item_inline_result(item: tables.Item):
-    return {
-        'type': 'article',
-        'id': f'item#{item.id}',
-        'title': f'{item.name} (item)',
-        'input_message_content': {
-            'message_text': format_item(item),
-            'parse_mode': 'Markdown',
-        },
-        'description': str(item.short_effect),
-    }
-
-
-def format_move(move: tables.Move):
-    return f'''*{move.name}* (move)
-Type: {move.type.name}
-Power: {move.power}
-Accuracy: {move.accuracy}
-PP: {move.pp}
-{move.effect}'''
-
-
-def format_move_inline_result(move: tables.Move):
-    return {
-        'type': 'article',
-        'id': f'move#{move.id}',
-        'title': f'{move.name} (move)',
-        'input_message_content': {
-            'message_text': format_move(move),
-            'parse_mode': 'Markdown',
-        },
-        'description': str(move.short_effect),
-    }
-
-
-def format_result(session, result):
-    if isinstance(result, tables.PokemonSpecies):
-        return format_pokemon(session, result.default_pokemon)
-    elif isinstance(result, tables.PokemonForm):
-        return format_pokemon(session, result.pokemon)
-    elif isinstance(result, tables.Item):
-        return format_item(result)
-    elif isinstance(result, tables.Ability):
-        return format_ability(result)
-    elif isinstance(result, tables.Move):
-        return format_move(result)
-
-
-def format_inline_result(session, result):
-    if isinstance(result, tables.PokemonSpecies):
-        return format_pokemon_inline_result(session, result.default_pokemon)
-    elif isinstance(result, tables.PokemonForm):
-        return format_pokemon_inline_result(session, result.pokemon)
-    elif isinstance(result, tables.Ability):
-        return format_ability_inline_result(result)
-    elif isinstance(result, tables.Item):
-        return format_item_inline_result(result)
-    elif isinstance(result, tables.Move):
-        return format_move_inline_result(result)
 
 
 def handle_text_message(message):
