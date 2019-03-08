@@ -60,6 +60,12 @@ def move_entry(move):
     return MoveEntry(move)
 
 
+@pytest.fixture
+def gloom_entry(session):
+    gloom = util.get(session, tables.Pokemon, 'gloom')
+    return PokemonEntry(gloom)
+
+
 class TestEntry:
     def test_from_pokemon_species_model(self, pokemon_species):
         entry = Entry.from_model(pokemon_species)
@@ -135,7 +141,8 @@ Hidden ability: Chlorophyll
 Height: 0.7 m
 Weight: 6.9 kg
 [Image](https://assets.pokemon.com/assets/cms2/img/pokedex/full/001.png)''',
-            children=[SectionReference('Base stats', 'pokemon/1/base_stats')])
+            children=[SectionReference('Base stats', 'pokemon/1/base_stats'),
+                      SectionReference('Evolutions', 'pokemon/1/evolutions')])
         assert actual == expected
 
     def test_base_stats_section(self, pokemon_entry: PokemonEntry):
@@ -150,7 +157,8 @@ Special Attack:  65
 Special Defense: 65
 Speed:           45
 ```''',
-            parent=SectionReference('', 'pokemon/1/')
+            parent=SectionReference('', 'pokemon/1/'),
+            siblings=[SectionReference('Evolutions', 'pokemon/1/evolutions')]
         )
         assert actual == expected
 
@@ -172,9 +180,28 @@ Weight: 6.9 kg
 [Image](https://assets.pokemon.com/assets/cms2/img/pokedex/full/001.png)''',
                 'parse_mode': 'Markdown',
             },
-            'reply_markup': {'inline_keyboard': [[{'text': 'Base stats', 'callback_data': 'pokemon/1/base_stats'}]]},
+            'reply_markup': {'inline_keyboard': [[{'text': 'Base stats', 'callback_data': 'pokemon/1/base_stats'}],
+                                                 [{'text': 'Evolutions', 'callback_data': 'pokemon/1/evolutions'}]]},
             'thumb_url': 'https://assets.pokemon.com/assets/cms2/img/pokedex/detail/001.png'}
         actual = inline_result_for_entry(pokemon_entry)
+        assert actual == expected
+
+    def test_evolutions(self, gloom_entry):
+        expected = Section(
+            content='''*Gloom (#044)*
+
+Evolves from:
+Oddish (#043)
+
+Evolves into:
+Vileplume (#045)
+Bellossom (#182)''',
+            parent=SectionReference('', 'pokemon/44/'),
+            children=[SectionReference('Oddish (#043)', 'pokemon/43/'),
+                      SectionReference('Vileplume (#045)', 'pokemon/45/'),
+                      SectionReference('Bellossom (#182)', 'pokemon/182/')]
+        )
+        actual = gloom_entry.section('evolutions')
         assert actual == expected
 
 

@@ -1,4 +1,3 @@
-import json
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass, field
 from collections import namedtuple
@@ -83,9 +82,10 @@ class PokemonEntry(Entry):
     def __init__(self, pokemon: tables.Pokemon):
         self.pokemon = pokemon
         self.slug = f'pokemon/{pokemon.id}'
+        self._title = f'{self.pokemon.name} (#{self.pokemon.id:03})'
 
     def title(self):
-        return f'{self.pokemon.name} (#{self.pokemon.id:03})'
+        return self._title
 
     def description(self):
         return '/'.join(t.name for t in self.pokemon.types)
@@ -105,7 +105,8 @@ class PokemonEntry(Entry):
     def default_section(self) -> Section:
         return Section(
             content=self.summary(),
-            children=[SectionReference('Base stats', f'{self.slug}/base_stats')]
+            children=[SectionReference('Base stats', f'{self.slug}/base_stats'),
+                      SectionReference('Evolutions', f'{self.slug}/evolutions')]
         )
 
     def section(self, path: str) -> Optional[Section]:
@@ -115,11 +116,14 @@ class PokemonEntry(Entry):
             return Section(
                 content=self.base_stats(),
                 parent=SectionReference('', f'{self.slug}/'),
+                siblings=[SectionReference('Evolutions', f'{self.slug}/evolutions')],
             )
+        elif path == 'evolutions':
+            return self.evolutions_section()
 
     def summary(self):
         type_effectiveness = get_type_effectiveness(session, self.pokemon)
-        s = f'''*{self.pokemon.name} (#{self.pokemon.id:03})*
+        s = f'''*{self._title}*
 Type: {'/'.join(t.name for t in self.pokemon.types)}
 {format_type_effectiveness(type_effectiveness)}
 Abilities: {', '.join(a.name for a in self.pokemon.abilities)}
@@ -132,10 +136,28 @@ Weight: {self.pokemon.weight / 10} kg'''
 
     def base_stats(self):
         base_stats = '\n'.join(f'{f"{s.stat.name}:":16} {s.base_stat}' for s in self.pokemon.stats)
-        return f'''*{self.pokemon.name} (#{self.pokemon.id:03})*
+        return f'''*{self._title}*
 ```
 {base_stats}
 ```'''
+
+    def evolutions_section(self) -> Optional[Section]:
+        species = self.pokemon.species
+        parent = species.parent_species
+        children = species.child_species
+        if not parent and not children:
+            return
+        content = f'*{self._title}*'
+        if parent:
+            content += f'\n\nEvolves from:\n{parent.name} (#{parent.id:03})'
+        if children:
+            content += '\n\nEvolves into:\n' + '\n'.join(f'{s.name} (#{s.id:03})' for s in children)
+        section = Section(content, parent=SectionReference('', f'pokemon/{self.pokemon.id}/'))
+        if parent:
+            section.children.append(SectionReference(f'{parent.name} (#{parent.id:03})', f'pokemon/{parent.id}/'))
+        if children:
+            section.children.extend(SectionReference(f'{s.name} (#{s.id:03})', f'pokemon/{s.id}/') for s in children)
+        return section
 
 
 class ItemEntry(Entry):
