@@ -66,6 +66,12 @@ def gloom_entry(session):
     return PokemonEntry(gloom)
 
 
+@pytest.fixture
+def silcoon_entry(session):
+    silcoon = util.get(session, tables.Pokemon, 'silcoon')
+    return PokemonEntry(silcoon)
+
+
 class TestEntry:
     def test_from_pokemon_species_model(self, pokemon_species):
         entry = Entry.from_model(pokemon_species)
@@ -188,14 +194,10 @@ Weight: 6.9 kg
 
     def test_evolutions(self, gloom_entry):
         expected = Section(
-            content='''*Gloom (#044)*
-
-Evolves from:
-Oddish (#043)
-
-Evolves into:
-Vileplume (#045)
-Bellossom (#182)''',
+            content='''Oddish (#043)
+`└` *Gloom (#044)*
+`  └` Vileplume (#045)
+`  └` Bellossom (#182)''',
             parent=SectionReference('', 'pokemon/44/'),
             children=[SectionReference('Oddish (#043)', 'pokemon/43/'),
                       SectionReference('Vileplume (#045)', 'pokemon/45/'),

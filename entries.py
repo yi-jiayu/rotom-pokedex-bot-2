@@ -141,22 +141,36 @@ Weight: {self.pokemon.weight / 10} kg'''
 {base_stats}
 ```'''
 
-    def evolutions_section(self) -> Optional[Section]:
-        species = self.pokemon.species
-        parent = species.parent_species
-        children = species.child_species
-        if not parent and not children:
-            return
-        content = f'*{self._title}*'
-        if parent:
-            content += f'\n\nEvolves from:\n{parent.name} (#{parent.id:03})'
-        if children:
-            content += '\n\nEvolves into:\n' + '\n'.join(f'{s.name} (#{s.id:03})' for s in children)
+    @staticmethod
+    def _build_evolutionary_tree(base, evolutions, current_id) -> str:
+        tree = []
+        stack = [(base, 0)]
+        while stack:
+            curr, depth = stack.pop()
+            if depth == 0:
+                prefix = ''
+            else:
+                prefix = f'`{" " * (depth - 1) * 2}└` '
+            name = f'*{curr.name} (#{curr.id:03})*' if curr.id == current_id else f'{curr.name} (#{curr.id:03})'
+            tree.append(f'{prefix}{name}')
+            for p in sorted(evolutions.get(curr, []), key=lambda x: x.id, reverse=True):
+                stack.append((p, depth + 1))
+        return '\n'.join(tree)
+
+    def evolutions_section(self) -> Section:
+        chain = self.pokemon.species.evolution_chain.species
+        evolutions = {}
+        first = None
+        for p in chain:
+            if not p.parent_species:
+                first = p
+            if p.child_species:
+                evolutions[p] = evolutions.get(p, []) + p.child_species
+        content = self._build_evolutionary_tree(first, evolutions, self.pokemon.species_id)
         section = Section(content, parent=SectionReference('', f'pokemon/{self.pokemon.id}/'))
-        if parent:
-            section.children.append(SectionReference(f'{parent.name} (#{parent.id:03})', f'pokemon/{parent.id}/'))
-        if children:
-            section.children.extend(SectionReference(f'{s.name} (#{s.id:03})', f'pokemon/{s.id}/') for s in children)
+        section.children.extend(
+            SectionReference(f'{p.name} (#{p.id:03})', f'pokemon/{p.id}/')
+            for p in chain if p.id != self.pokemon.species_id)
         return section
 
 
