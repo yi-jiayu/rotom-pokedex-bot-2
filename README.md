@@ -13,9 +13,11 @@ https://github.com/veekun/pokedex.
 - [x] Pokémon forms
 - [x] Items
 - [ ] Pokémon locations
-- [ ] Pokémon base stats
+- [x] Pokémon base stats
+- [x] Pokémon evolutions
+- [ ] Pokémon learnsets
 
-- [ ] Inline mode
+- [x] Inline mode
 
 ## Dependencies
 
