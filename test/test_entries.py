@@ -195,9 +195,9 @@ Weight: 6.9 kg
     def test_evolutions(self, gloom_entry):
         expected = Section(
             content='''Oddish (#043)
-`└` *Gloom (#044)*
-`  └` Vileplume (#045)
-`  └` Bellossom (#182)''',
+`└` *Gloom (#044)* starting from level 21
+`  └` Vileplume (#045) using a Leaf Stone
+`  └` Bellossom (#182) using a Sun Stone''',
             parent=SectionReference('', 'pokemon/44/'),
             children=[SectionReference('Oddish (#043)', 'pokemon/43/'),
                       SectionReference('Vileplume (#045)', 'pokemon/45/'),

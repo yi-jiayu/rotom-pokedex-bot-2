@@ -142,6 +142,14 @@ Weight: {self.pokemon.weight / 10} kg'''
 ```'''
 
     @staticmethod
+    def _evolution_method(pokemon_evolution: tables.PokemonEvolution) -> str:
+        if pokemon_evolution.evolution_trigger_id == 1 and pokemon_evolution.minimum_level:
+            return f' starting from level {pokemon_evolution.minimum_level}'
+        elif pokemon_evolution.evolution_trigger_id == 3:
+            return f' using a {pokemon_evolution.trigger_item.name}'
+        return ''
+
+    @staticmethod
     def _build_evolutionary_tree(base, evolutions, current_id) -> str:
         tree = []
         stack = [(base, 0)]
@@ -152,7 +160,8 @@ Weight: {self.pokemon.weight / 10} kg'''
             else:
                 prefix = f'`{" " * (depth - 1) * 2}└` '
             name = f'*{curr.name} (#{curr.id:03})*' if curr.id == current_id else f'{curr.name} (#{curr.id:03})'
-            tree.append(f'{prefix}{name}')
+            method = PokemonEntry._evolution_method(curr.evolutions[0]) if curr.evolutions else ''
+            tree.append(f'{prefix}{name}{method}')
             for p in sorted(evolutions.get(curr, []), key=lambda x: x.id, reverse=True):
                 stack.append((p, depth + 1))
         return '\n'.join(tree)
