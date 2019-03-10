@@ -72,6 +72,18 @@ def silcoon_entry(session):
     return PokemonEntry(silcoon)
 
 
+@pytest.fixture
+def machamp_entry(session):
+    machamp = util.get(session, tables.Pokemon, 'machamp')
+    return PokemonEntry(machamp)
+
+
+@pytest.fixture
+def scizor_entry(session):
+    scizor = util.get(session, tables.Pokemon, 'scizor')
+    return PokemonEntry(scizor)
+
+
 class TestEntry:
     def test_from_pokemon_species_model(self, pokemon_species):
         entry = Entry.from_model(pokemon_species)
@@ -195,7 +207,7 @@ Weight: 6.9 kg
     def test_evolutions(self, gloom_entry):
         expected = Section(
             content='''Oddish (#043)
-`└` *Gloom (#044)* starting from level 21
+`└` *Gloom (#044)* at level 21
 `  └` Vileplume (#045) using a Leaf Stone
 `  └` Bellossom (#182) using a Sun Stone''',
             parent=SectionReference('', 'pokemon/44/'),
@@ -204,6 +216,26 @@ Weight: 6.9 kg
                       SectionReference('Bellossom (#182)', 'pokemon/182/')]
         )
         actual = gloom_entry.section('evolutions')
+        assert actual == expected
+
+    def test_evolutions_trade(self, machamp_entry):
+        expected = Section(
+            content='''Machop (#066)
+`└` Machoke (#067) at level 28
+`  └` *Machamp (#068)* when traded''',
+            parent=SectionReference('', 'pokemon/68/'),
+            children=[SectionReference(name='Machop (#066)', path='pokemon/66/'),
+                      SectionReference(name='Machoke (#067)', path='pokemon/67/')])
+        actual = machamp_entry.section('evolutions')
+        assert actual == expected
+
+    def test_evolutions_trade_with_item(self, scizor_entry):
+        expected = Section(
+            content='''Scyther (#123)
+`└` *Scizor (#212)* when traded holding a Metal Coat''',
+            parent=SectionReference('', 'pokemon/212/'),
+            children=[SectionReference(name='Scyther (#123)', path='pokemon/123/')])
+        actual = scizor_entry.section('evolutions')
         assert actual == expected
 
 

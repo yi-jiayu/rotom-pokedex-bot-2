@@ -144,9 +144,14 @@ Weight: {self.pokemon.weight / 10} kg'''
     @staticmethod
     def _evolution_method(pokemon_evolution: tables.PokemonEvolution) -> str:
         if pokemon_evolution.evolution_trigger_id == 1 and pokemon_evolution.minimum_level:
-            return f' starting from level {pokemon_evolution.minimum_level}'
+            return f' at level {pokemon_evolution.minimum_level}'
         elif pokemon_evolution.evolution_trigger_id == 3:
             return f' using a {pokemon_evolution.trigger_item.name}'
+        elif pokemon_evolution.evolution_trigger_id == 2:
+            s = ' when traded'
+            if pokemon_evolution.held_item:
+                s += f' holding a {pokemon_evolution.held_item.name}'
+            return s
         return ''
 
     @staticmethod
