@@ -159,8 +159,11 @@ Hidden ability: Chlorophyll
 Height: 0.7 m
 Weight: 6.9 kg
 [Image](https://assets.pokemon.com/assets/cms2/img/pokedex/full/001.png)''',
-            children=[SectionReference('Base stats', 'pokemon/1/base_stats'),
-                      SectionReference('Evolutions', 'pokemon/1/evolutions')])
+            children=[
+                SectionReference('Base stats', 'pokemon/1/base_stats'),
+                SectionReference('Evolutions', 'pokemon/1/evolutions'),
+                SectionReference('Locations', 'pokemon/1/locations'),
+            ])
         assert actual == expected
 
     def test_base_stats_section(self, pokemon_entry: PokemonEntry):
@@ -176,7 +179,10 @@ Special Defense: 65
 Speed:           45
 ```''',
             parent=SectionReference('', 'pokemon/1/'),
-            siblings=[SectionReference('Evolutions', 'pokemon/1/evolutions')]
+            siblings=[
+                SectionReference('Evolutions', 'pokemon/1/evolutions'),
+                SectionReference('Locations', 'pokemon/1/locations'),
+            ]
         )
         assert actual == expected
 
@@ -198,8 +204,13 @@ Weight: 6.9 kg
 [Image](https://assets.pokemon.com/assets/cms2/img/pokedex/full/001.png)''',
                 'parse_mode': 'Markdown',
             },
-            'reply_markup': {'inline_keyboard': [[{'text': 'Base stats', 'callback_data': 'pokemon/1/base_stats'}],
-                                                 [{'text': 'Evolutions', 'callback_data': 'pokemon/1/evolutions'}]]},
+            'reply_markup': {
+                'inline_keyboard': [
+                    [{'text': 'Base stats', 'callback_data': 'pokemon/1/base_stats'}],
+                    [{'text': 'Evolutions', 'callback_data': 'pokemon/1/evolutions'}],
+                    [{'text': 'Locations', 'callback_data': 'pokemon/1/locations'}],
+                ],
+            },
             'thumb_url': 'https://assets.pokemon.com/assets/cms2/img/pokedex/detail/001.png'}
         actual = inline_result_for_entry(pokemon_entry)
         assert actual == expected
@@ -236,6 +247,41 @@ Weight: 6.9 kg
             parent=SectionReference('', 'pokemon/212/'),
             children=[SectionReference(name='Scyther (#123)', path='pokemon/123/')])
         actual = scizor_entry.section('evolutions')
+        assert actual == expected
+
+    def test_locations(self, pikachu_entry):
+        content = '''*Pikachu (#025)*
+Locations
+
+*Red, Blue:* Viridian Forest, Power Plant
+*Ruby, Sapphire, Emerald:* Safari Zone
+*FireRed, LeafGreen:* Viridian Forest, Power Plant
+*Diamond, Pearl, Platinum:* Trophy Garden
+*HeartGold, SoulSilver:* Viridian Forest
+*X, Y:* Santalune Forest, Route 3'''
+        expected = Section(
+            content,
+            parent=SectionReference('', 'pokemon/25/'),
+            siblings=[
+                SectionReference('Base stats', 'pokemon/25/base_stats'),
+                SectionReference('Evolutions', 'pokemon/25/evolutions')
+            ])
+        actual = pikachu_entry.section('locations')
+        assert actual == expected
+
+    def test_locations_not_found_in_the_wild(self, scizor_entry):
+        content = '''*Scizor (#212)*
+Locations
+
+Not found in the wild'''
+        expected = Section(
+            content,
+            parent=SectionReference('', 'pokemon/212/'),
+            siblings=[
+                SectionReference('Base stats', 'pokemon/212/base_stats'),
+                SectionReference('Evolutions', 'pokemon/212/evolutions')
+            ])
+        actual = scizor_entry.section('locations')
         assert actual == expected
 
 

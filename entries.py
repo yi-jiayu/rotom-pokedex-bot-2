@@ -1,6 +1,8 @@
 from abc import ABCMeta, abstractmethod
-from dataclasses import dataclass, field
 from collections import namedtuple
+from dataclasses import dataclass, field
+from itertools import groupby
+from operator import itemgetter
 from typing import Dict, List, Optional
 
 from pokedex.db import tables, util
@@ -23,12 +25,6 @@ def format_type_effectiveness(type_effectiveness):
 
 def pokemon_full_image_url(pokemon_id):
     return f'https://assets.pokemon.com/assets/cms2/img/pokedex/full/{pokemon_id:03}.png'
-
-
-def format_pokemon_base_stats(pokemon):
-    base_stats = '\n'.join(f'{f"{s.stat.name}:":16} {s.base_stat}' for s in pokemon.stats)
-    return f'''*{pokemon.name} (#{pokemon.id:03})*
-{base_stats}'''
 
 
 SectionReference = namedtuple('SectionReference', ['name', 'path'])
@@ -105,8 +101,11 @@ class PokemonEntry(Entry):
     def default_section(self) -> Section:
         return Section(
             content=self.summary(),
-            children=[SectionReference('Base stats', f'{self.slug}/base_stats'),
-                      SectionReference('Evolutions', f'{self.slug}/evolutions')]
+            children=[
+                SectionReference('Base stats', f'{self.slug}/base_stats'),
+                SectionReference('Evolutions', f'{self.slug}/evolutions'),
+                SectionReference('Locations', f'{self.slug}/locations'),
+            ]
         )
 
     def section(self, path: str) -> Optional[Section]:
@@ -116,10 +115,22 @@ class PokemonEntry(Entry):
             return Section(
                 content=self.base_stats(),
                 parent=SectionReference('', f'{self.slug}/'),
-                siblings=[SectionReference('Evolutions', f'{self.slug}/evolutions')],
+                siblings=[
+                    SectionReference('Evolutions', f'{self.slug}/evolutions'),
+                    SectionReference('Locations', f'{self.slug}/locations'),
+                ],
             )
         elif path == 'evolutions':
             return self.evolutions_section()
+        elif path == 'locations':
+            return Section(
+                self.locations(),
+                parent=SectionReference('', f'{self.slug}/'),
+                siblings=[
+                    SectionReference('Base stats', f'{self.slug}/base_stats'),
+                    SectionReference('Evolutions', f'{self.slug}/evolutions'),
+                ],
+            )
 
     def summary(self):
         type_effectiveness = get_type_effectiveness(session, self.pokemon)
@@ -186,6 +197,21 @@ Weight: {self.pokemon.weight / 10} kg'''
             SectionReference(f'{p.name} (#{p.id:03})', f'pokemon/{p.id}/')
             for p in chain if p.id != self.pokemon.species_id)
         return section
+
+    def locations(self):
+        q = session.query(tables.Encounter) \
+            .join(tables.LocationArea).join(tables.Location) \
+            .filter(tables.Encounter.pokemon_id == self.pokemon.id) \
+            .group_by(tables.LocationArea.location_id, tables.Encounter.version_id) \
+            .order_by(tables.Encounter.version_id)
+        encounters = ((e.version.names_local.name, e.location_area.location.names_local.name) for e in q)
+        grouped_by_version = ((version_group, tuple(l[1] for l in locations)) for version_group, locations in
+                              groupby(encounters, key=itemgetter(0)))
+        grouped_by_locations = ((tuple(vg[0] for vg in version_group), locations) for locations, version_group in
+                                groupby(grouped_by_version, key=itemgetter(1)))
+        locations = '\n'.join(
+            f'*{", ".join(versions)}:* {", ".join(locations)}' for versions, locations in grouped_by_locations)
+        return f'*{self._title}*\nLocations\n\n' + (locations or 'Not found in the wild')
 
 
 class ItemEntry(Entry):
