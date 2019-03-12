@@ -12,3 +12,7 @@ def _build_message(**kwargs):
 
 def info(**kwargs):
     logging.info(_build_message(**kwargs))
+
+
+def debug(**kwargs):
+    logging.debug(_build_message(**kwargs))

@@ -24,7 +24,8 @@ def handle_text_message(message):
     query = message['text'][:MAX_QUERY_LENGTH]
     chat_id = message['chat']['id']
     hits = lookup(query)
-    log.info(query=query, hits=hits, type='text_message', chat_id=chat_id, message_id=message['message_id'])
+    log.info(query=query, type='text_message', chat_id=chat_id, message_id=message['message_id'])
+    log.debug(hits=hits)
     text = None
     reply_markup = None
     if hits:
@@ -49,7 +50,8 @@ def handle_inline_query(inline_query):
     inline_query_id = inline_query['id']
     if query:
         hits = lookup(query)
-        log.info(query=query, hits=hits, type='inline_query', inline_query_id=inline_query_id)
+        log.info(query=query, type='inline_query', inline_query_id=inline_query_id)
+        log.debug(hits=hits)
         entries_ = filter(None, (entries.Entry.from_model(h.object) for h in hits))
         results = list(entries.inline_result_for_entry(e) for e in entries_)
         serialised_results = json.dumps(results) if results else ''
@@ -129,6 +131,7 @@ class WebhookHandler(tornado.web.RequestHandler):
 
     async def post(self):
         update = json.loads(self.request.body)
+        log.debug(update=update)
         if 'message' in update and 'text' in update['message']:
             response = handle_text_message(update['message'])
             self.write(response)
@@ -162,13 +165,18 @@ def make_app(bot_token):
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
     sentry_sdk.init()
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--set-webhook', action='store_true', help='Sets the bot webhook before starting.')
     parser.add_argument('-p', '--port', help='Port to listen on')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Verbose mode')
     args = parser.parse_args()
+
+    if args.verbose:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
 
     bot_token = os.getenv('ROTOM_BOT_TOKEN')
     if not bot_token:
