@@ -135,6 +135,7 @@ class PokemonEntry(Entry):
     def summary(self):
         type_effectiveness = get_type_effectiveness(session, self.pokemon)
         s = f'''*{self._title}*
+{self.pokemon.species.genus}
 Type: {'/'.join(t.name for t in self.pokemon.types)}
 {format_type_effectiveness(type_effectiveness)}
 Abilities: {', '.join(a.name for a in self.pokemon.abilities)}

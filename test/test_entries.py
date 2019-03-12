@@ -151,6 +151,7 @@ class TestPokemonEntry:
         actual = pokemon_entry.default_section()
         expected = Section(
             content='''*Bulbasaur (#001)*
+Seed Pokémon
 Type: Grass/Poison
 Weaknesses: Flying (2x), Fire (2x), Psychic (2x), Ice (2x)
 Resistances: Fighting (0.5x), Water (0.5x), Grass (0.25x), Electric (0.5x), Fairy (0.5x)
@@ -194,6 +195,7 @@ Speed:           45
             'description': 'Grass/Poison',
             'input_message_content': {
                 'message_text': '''*Bulbasaur (#001)*
+Seed Pokémon
 Type: Grass/Poison
 Weaknesses: Flying (2x), Fire (2x), Psychic (2x), Ice (2x)
 Resistances: Fighting (0.5x), Water (0.5x), Grass (0.25x), Electric (0.5x), Fairy (0.5x)
