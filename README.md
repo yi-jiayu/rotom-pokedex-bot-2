@@ -3,7 +3,11 @@
 
 # Rotom Pokédex Bot 2
 A rewrite of https://github.com/yi-jiayu/rotom-pokedex-bot to use data from
-https://github.com/veekun/pokedex. 
+https://github.com/veekun/pokedex.
+
+Find it on Telegram: [@rotom_pokedex_bot](https://t.me/rotom_pokedex_bot)
+
+<img alt="Screenshot of Rotom Pokédex Bot displaying an entry for Turtwig" src="https://user-images.githubusercontent.com/11734309/54208898-c00aac00-4517-11e9-8a4a-6b3101d84123.png" width=400>
 
 ## Roadmap
 
