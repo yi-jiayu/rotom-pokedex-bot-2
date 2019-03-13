@@ -12,6 +12,8 @@ from sqlalchemy.orm.exc import NoResultFound
 from app import session
 from type_efficacy import get_type_effectiveness
 
+STAT_NAMES = ('HP', 'Attack', 'Defense', 'Sp. Atk', 'Sp. Def', 'Speed')
+
 
 def format_type_effectiveness(type_effectiveness):
     weaknesses = ', '.join(f'{t} ({e:.2g}x)' for t, e in type_effectiveness.items() if e > 1)
@@ -153,10 +155,17 @@ Weight: {self.pokemon.weight / 10} kg
         return s
 
     def base_stats(self):
-        base_stats = '\n'.join(f'{f"{s.stat.name}:":16} {s.base_stat}' for s in self.pokemon.stats)
+        stats = [s.base_stat for s in self.pokemon.stats]
+        total = sum(stats)
+        highest_stat = max(stats)
+        unit = highest_stat / 10
+        bars = [int(value / unit) for value in stats]
+        base_stats = '\n'.join(
+            f'{f"{STAT_NAMES[i]}:":8} {value:3} {"=" * bars}' for i, (value, bars) in enumerate(zip(stats, bars)))
         return f'''*{self._title}*
 ```
 {base_stats}
+Total:   {total}
 ```'''
 
     @staticmethod

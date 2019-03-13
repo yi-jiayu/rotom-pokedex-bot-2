@@ -174,12 +174,13 @@ Weight: 6.9 kg
         expected = Section(
             content='''*Bulbasaur (#001)*
 ```
-HP:              45
-Attack:          49
-Defense:         49
-Special Attack:  65
-Special Defense: 65
-Speed:           45
+HP:       45 ======
+Attack:   49 =======
+Defense:  49 =======
+Sp. Atk:  65 ==========
+Sp. Def:  65 ==========
+Speed:    45 ======
+Total:   318
 ```''',
             parent=SectionReference('', 'pokemon/1/'),
             siblings=[
