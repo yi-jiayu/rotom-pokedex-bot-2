@@ -127,14 +127,10 @@ class TestPokemonEntry:
         actual = pokemon_entry.description()
         assert actual == expected
 
-    def test_thumbnail_when_available(self, pokemon_entry):
+    def test_thumbnail(self, pokemon_entry):
         expected = 'https://assets.pokemon.com/assets/cms2/img/pokedex/detail/001.png'
         actual = pokemon_entry.thumbnail()
         assert actual == expected
-
-    def test_thumbnail_when_not_available(self, pokemon_form):
-        entry = PokemonEntry(pokemon_form.pokemon)
-        assert entry.thumbnail() is None
 
     def test_from_pokemon_id(self):
         entry = PokemonEntry.from_pokemon_id(1)
@@ -146,6 +142,12 @@ class TestPokemonEntry:
 
     def test_nonexistent_section(self, pokemon_entry: PokemonEntry):
         assert pokemon_entry.section('nonexistent') is None
+
+    def test_image_url(self, pokemon_entry):
+        assert pokemon_entry.image_url() == 'https://assets.pokemon.com/assets/cms2/img/pokedex/full/001.png'
+
+    def test_form_image_url(self, mega_sharpedo_entry):
+        assert mega_sharpedo_entry.image_url() == 'https://assets.pokemon.com/assets/cms2/img/pokedex/full/319_f2.png'
 
     def test_default_section(self, pokemon_entry: PokemonEntry):
         actual = pokemon_entry.default_section()

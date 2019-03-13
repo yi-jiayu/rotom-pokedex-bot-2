@@ -86,9 +86,16 @@ class PokemonEntry(Entry):
     def description(self):
         return '/'.join(t.name for t in self.pokemon.types)
 
-    def thumbnail(self):
+    def thumbnail(self) -> str:
+        return self.image_url().replace('full', 'detail')
+
+    def image_url(self) -> str:
         if self.pokemon.id < 10000:
-            return f'https://assets.pokemon.com/assets/cms2/img/pokedex/detail/{self.pokemon.id:03}.png'
+            return f'https://assets.pokemon.com/assets/cms2/img/pokedex/full/{self.pokemon.id:03}.png'
+        else:
+            species_id = self.pokemon.default_form.species.id
+            form_order = self.pokemon.default_form.form_order
+            return f'https://assets.pokemon.com/assets/cms2/img/pokedex/full/{species_id:03}_f{form_order}.png'
 
     @staticmethod
     def from_pokemon_id(id_: int) -> Optional['PokemonEntry']:
@@ -141,9 +148,8 @@ Type: {'/'.join(t.name for t in self.pokemon.types)}
 Abilities: {', '.join(a.name for a in self.pokemon.abilities)}
 Hidden ability: {self.pokemon.hidden_ability and self.pokemon.hidden_ability.name}
 Height: {self.pokemon.height / 10} m
-Weight: {self.pokemon.weight / 10} kg'''
-        if self.pokemon.id < 10000:
-            s += f'\n[Image]({pokemon_full_image_url(self.pokemon.id)})'
+Weight: {self.pokemon.weight / 10} kg
+[Image]({self.image_url()})'''
         return s
 
     def base_stats(self):
