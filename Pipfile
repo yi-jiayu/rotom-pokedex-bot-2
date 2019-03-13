@@ -9,7 +9,6 @@ pytest-cov = "*"
 
 [packages]
 pokedex = {editable = true,git = "https://github.com/veekun/pokedex.git"}
-jupyter = "*"
 tornado = "*"
 sentry-sdk = "*"
 
