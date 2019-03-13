@@ -289,6 +289,27 @@ Not found in the wild'''
         actual = scizor_entry.section('locations')
         assert actual == expected
 
+    def test_learnset_section(self, pikachu_entry):
+        expected = '''```
+Level,Move,Type,Cat.,Pwr.,Acc.,PP
+1,Growl,Normal,Status,-,100%,40
+1,Thunder Shock,Electric,Special,40,100%,30
+5,Tail Whip,Normal,Status,-,100%,30
+10,Thunder Wave,Electric,Status,-,90%,20
+13,Quick Attack,Normal,Physical,40,100%,30
+18,Electro Ball,Electric,Special,-,100%,10
+21,Double Team,Normal,Status,-,-%,15
+26,Slam,Normal,Physical,80,75%,20
+29,Thunderbolt,Electric,Special,90,100%,15
+34,Feint,Normal,Physical,30,100%,10
+37,Agility,Psychic,Status,-,-%,30
+42,Discharge,Electric,Special,80,100%,15
+45,Light Screen,Psychic,Status,-,-%,30
+50,Thunder,Electric,Special,110,70%,10
+```'''
+        actual = pikachu_entry.learnset()
+        assert actual == expected
+
 
 class TestItemEntry:
     def test_slug(self, item_entry):

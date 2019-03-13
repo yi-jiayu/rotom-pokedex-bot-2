@@ -229,6 +229,30 @@ Total:   {total}
             f'*{", ".join(versions)}:* {", ".join(locations)}' for versions, locations in grouped_by_locations)
         return f'*{self._title}*\nLocations\n\n' + (locations or 'Not found in the wild')
 
+    def learnset(self):
+        level_up_moves = session.query(tables.PokemonMove) \
+            .join(tables.VersionGroup) \
+            .filter(tables.PokemonMove.pokemon_id == self.pokemon.id,
+                    tables.PokemonMove.pokemon_move_method_id == 1,
+                    tables.VersionGroup.generation_id == 5) \
+            .group_by(tables.PokemonMove.move_id) \
+            .order_by(tables.PokemonMove.level, tables.PokemonMove.order) \
+            .all()
+        header = ','.join(('Level', 'Move', 'Type', 'Cat.', 'Pwr.', 'Acc.', 'PP'))
+        rows = [','.join(
+            (str(move.level),
+             move.move.name,
+             move.move.type.name,
+             move.move.damage_class.name.capitalize(),
+             f'{move.move.power or "-"}',
+             f'{move.move.accuracy or "-"}%',
+             str(move.move.pp))) for move in level_up_moves]
+        body = '\n'.join(rows)
+        return f'''```
+{header}
+{body}
+```'''
+
 
 class ItemEntry(Entry):
     def __init__(self, item: tables.Item):
