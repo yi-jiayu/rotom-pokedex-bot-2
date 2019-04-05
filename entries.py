@@ -114,6 +114,7 @@ class PokemonEntry(Entry):
                 SectionReference('Base stats', f'{self.slug}/base_stats'),
                 SectionReference('Evolutions', f'{self.slug}/evolutions'),
                 SectionReference('Locations', f'{self.slug}/locations'),
+                SectionReference('Flavour text', f'{self.slug}/flavour_text'),
             ]
         )
 
@@ -127,6 +128,7 @@ class PokemonEntry(Entry):
                 siblings=[
                     SectionReference('Evolutions', f'{self.slug}/evolutions'),
                     SectionReference('Locations', f'{self.slug}/locations'),
+                    SectionReference('Flavour text', f'{self.slug}/flavour_text'),
                 ],
             )
         elif path == 'evolutions':
@@ -138,6 +140,17 @@ class PokemonEntry(Entry):
                 siblings=[
                     SectionReference('Base stats', f'{self.slug}/base_stats'),
                     SectionReference('Evolutions', f'{self.slug}/evolutions'),
+                    SectionReference('Flavour text', f'{self.slug}/flavour_text'),
+                ],
+            )
+        elif path == 'flavour_text':
+            return Section(
+                self.flavour_text(),
+                parent=SectionReference('', f'{self.slug}/'),
+                siblings=[
+                    SectionReference('Base stats', f'{self.slug}/base_stats'),
+                    SectionReference('Evolutions', f'{self.slug}/evolutions'),
+                    SectionReference('Locations', f'{self.slug}/locations'),
                 ],
             )
 
@@ -228,6 +241,24 @@ Total:   {total}
         locations = '\n'.join(
             f'*{", ".join(versions)}:* {", ".join(locations)}' for versions, locations in grouped_by_locations)
         return f'*{self._title}*\nLocations\n\n' + (locations or 'Not found in the wild')
+
+    def flavour_text(self, language_id=9):
+        q = session.query(tables.PokemonSpeciesFlavorText) \
+            .filter(tables.PokemonSpeciesFlavorText.species_id == self.pokemon.species_id,
+                    tables.PokemonSpeciesFlavorText.language_id == language_id) \
+            .group_by(tables.PokemonSpeciesFlavorText.version_id, tables.PokemonSpeciesFlavorText.flavor_text) \
+            .order_by(tables.PokemonSpeciesFlavorText.flavor_text, tables.PokemonSpeciesFlavorText.version_id)
+        # replace newlines and form feeds with spaces
+        fts = ((t.version_id,
+                t.version.names_local.name,
+                t.flavor_text.replace('\n', ' ').replace('\x0c', ' ')) for t in q)
+        grouped_by_text = [(tuple((ft[0], ft[1]) for ft in flavor_texts), text)
+                           for text, flavor_texts in
+                           groupby(fts, key=itemgetter(2))]
+        sorted_by_version = sorted(grouped_by_text, key=lambda x: min(x[0], key=itemgetter(0)))
+        flavor_texts = '\n'.join(
+            f'*{", ".join(v[1] for v in versions)}:* {flavor_text}' for versions, flavor_text in sorted_by_version)
+        return f'*{self._title}*\nFlavour text\n\n' + flavor_texts
 
 
 class ItemEntry(Entry):

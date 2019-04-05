@@ -166,6 +166,7 @@ Weight: 6.9 kg
                 SectionReference('Base stats', 'pokemon/1/base_stats'),
                 SectionReference('Evolutions', 'pokemon/1/evolutions'),
                 SectionReference('Locations', 'pokemon/1/locations'),
+                SectionReference('Flavour text', 'pokemon/1/flavour_text'),
             ])
         assert actual == expected
 
@@ -186,6 +187,7 @@ Total:   318
             siblings=[
                 SectionReference('Evolutions', 'pokemon/1/evolutions'),
                 SectionReference('Locations', 'pokemon/1/locations'),
+                SectionReference('Flavour text', 'pokemon/1/flavour_text'),
             ]
         )
         assert actual == expected
@@ -214,6 +216,7 @@ Weight: 6.9 kg
                     [{'text': 'Base stats', 'callback_data': 'pokemon/1/base_stats'}],
                     [{'text': 'Evolutions', 'callback_data': 'pokemon/1/evolutions'}],
                     [{'text': 'Locations', 'callback_data': 'pokemon/1/locations'}],
+                    [{'text': 'Flavour text', 'callback_data': 'pokemon/1/flavour_text'}],
                 ],
             },
             'thumb_url': 'https://assets.pokemon.com/assets/cms2/img/pokedex/detail/001.png'}
@@ -269,7 +272,8 @@ Locations
             parent=SectionReference('', 'pokemon/25/'),
             siblings=[
                 SectionReference('Base stats', 'pokemon/25/base_stats'),
-                SectionReference('Evolutions', 'pokemon/25/evolutions')
+                SectionReference('Evolutions', 'pokemon/25/evolutions'),
+                SectionReference('Flavour text', 'pokemon/25/flavour_text'),
             ])
         actual = pikachu_entry.section('locations')
         assert actual == expected
@@ -284,9 +288,36 @@ Not found in the wild'''
             parent=SectionReference('', 'pokemon/212/'),
             siblings=[
                 SectionReference('Base stats', 'pokemon/212/base_stats'),
-                SectionReference('Evolutions', 'pokemon/212/evolutions')
+                SectionReference('Evolutions', 'pokemon/212/evolutions'),
+                SectionReference('Flavour text', 'pokemon/212/flavour_text'),
             ])
         actual = scizor_entry.section('locations')
+        assert actual == expected
+
+    def test_flavour_text(self, pokemon_entry):
+        content = '''*Bulbasaur (#001)*
+Flavour text
+
+*Red, Blue, LeafGreen:* A strange seed was planted on its back at birth. The plant sprouts and grows with this POKéMON.
+*Yellow:* It can go for days without eating a single morsel. In the bulb on its back, it stores energy.
+*Gold, HeartGold:* The seed on its back is filled with nutrients. The seed grows steadily larger as its body grows.
+*Silver, SoulSilver:* It carries a seed on its back right from birth. As it grows older, the seed also grows larger.
+*Crystal:* While it is young, it uses the nutrients that are stored in the seeds on its back in order to grow.
+*Ruby, Sapphire, Emerald:* BULBASAUR can be seen napping in bright sunlight. There is a seed on its back. By soaking up the sun’s rays, the seed grows progressively larger.
+*FireRed:* There is a plant seed on its back right from the day this POKéMON is born. The seed slowly grows larger.
+*Diamond, Pearl, Platinum, Black, White, Black 2, White 2, Y:* For some time after its birth, it grows by gaining nourishment from the seed on its back.
+*X:* A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.
+*Omega Ruby, Alpha Sapphire:* Bulbasaur can be seen napping in bright sunlight. There is a seed on its back. By soaking up the sun’s rays, the seed grows progressively larger.'''
+        expected = Section(
+            content,
+            parent=SectionReference('', 'pokemon/1/'),
+            siblings=[
+                SectionReference('Base stats', 'pokemon/1/base_stats'),
+                SectionReference('Evolutions', 'pokemon/1/evolutions'),
+                SectionReference('Locations', 'pokemon/1/locations'),
+            ]
+        )
+        actual = pokemon_entry.section('flavour_text')
         assert actual == expected
 
 
