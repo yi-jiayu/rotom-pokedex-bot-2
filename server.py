@@ -144,6 +144,11 @@ class WebhookHandler(tornado.web.RequestHandler):
                 self.write(response)
 
 
+class HealthHandler(tornado.web.RequestHandler):
+    def get(self):
+        pass
+
+
 def set_webhook(bot_token, host):
     client = tornado.httpclient.HTTPClient()
     webhook_url = f'https://{host}/webhook'
@@ -161,6 +166,7 @@ def make_app(bot_token):
     http_client = tornado.httpclient.AsyncHTTPClient()
     return tornado.web.Application([
         ('/webhook', WebhookHandler, {'bot_token': bot_token, 'http_client': http_client}),
+        ('/health', HealthHandler),
     ])
 
 
