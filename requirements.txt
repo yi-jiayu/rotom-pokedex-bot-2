@@ -1,0 +1,11 @@
+-i https://pypi.org/simple
+-e git+https://github.com/veekun/pokedex.git@b09929dfb636d2b0337edbfe6761496c7d435965#egg=pokedex
+certifi==2020.6.20
+construct==2.5.3
+markdown==2.4.1
+sentry-sdk==0.19.2
+six==1.15.0; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'
+sqlalchemy==1.3.20; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'
+tornado==6.1
+urllib3==1.25.11; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4' and python_version < '4'
+whoosh==2.6.0
