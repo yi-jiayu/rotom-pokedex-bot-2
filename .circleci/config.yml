@@ -2,30 +2,27 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/python:3.7
-        environment:
-          PIPENV_VENV_IN_PROJECT: true
+      - image: circleci/python:3.10
     steps:
       - checkout
       - restore_cache:
           keys:
-            - v2-pipenv-{{ checksum "Pipfile.lock" }}
-            - v2-pipenv-
+            - v2-poetry-{{ checksum "poetry.lock" }}
       - run:
           name: install dependencies
           command: |
-            sudo pip install pipenv
-            pipenv install --dev
+            curl -sSL https://install.python-poetry.org | python3 -
+            poetry install
       - run:
           name: setup pokedex
-          command: pipenv run pokedex lookup eevee 2>/dev/null || pipenv run pokedex setup
+          command: poetry run pokedex lookup eevee 2>/dev/null || poetry run pokedex setup
       - save_cache:
           paths:
             - .venv
-          key: v2-pipenv-{{ checksum "Pipfile.lock" }}
+          key: v2-poetry-{{ checksum "poetry.lock" }}
       - run:
           name: run tests
-          command: pipenv run pytest --cov=./
+          command: poetry run pytest --cov=./
       - run:
           name: upload coverage
-          command: pipenv run bash <(curl -s https://codecov.io/bash)
+          command: poetry run bash <(curl -s https://codecov.io/bash)

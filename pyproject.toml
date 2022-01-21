@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "rotom-pokedex-bot-2"
+version = "0.1.0"
+description = ""
+authors = ["Jiayu Yi <yijiayu@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+tornado = "^6.1"
+sentry-sdk = "^1.5.3"
+pokedex = {git = "https://github.com/veekun/pokedex.git"}
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.5"
+pytest-cov = "^3.0.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
